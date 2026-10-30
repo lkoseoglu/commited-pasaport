@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Commited Pasaport — Dijital Ürün Pasaportu</title>
+<meta name="description" content="Commited Dijital Ürün Pasaportu (ESPR, AB 2024/1781) — ürün verisi girin, QR kodlu pasaport oluşturun.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#F5F7F4; --surface:#FFFFFF; --surface-2:#EEF2ED;
+  --fg:#15201B; --muted:#5C6B63; --line:#E1E7E1;
+  --accent:#0F6E4E; --accent-2:#148A61; --accent-ink:#FFFFFF;
+  --public:#0F6E4E; --public-bg:#E4F1EA;
+  --authority:#9A6412; --authority-bg:#F6ECD8;
+  --internal:#5A6472; --internal-bg:#E9ECF0;
+  --danger:#B23B2E;
+  --radius:14px; --radius-sm:9px;
+  --mono:ui-monospace,Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#0D1310; --surface:#141D18; --surface-2:#1B2620;
+  --fg:#E7EDE8; --muted:#97A69D; --line:#243029;
+  --accent:#3FBF8E; --accent-2:#51D2A0; --accent-ink:#06120C;
+  --public:#4FC996; --public-bg:#143026;
+  --authority:#D9A441; --authority-bg:#33280F;
+  --internal:#93A0AE; --internal-bg:#1E2630;
+  --danger:#E8745F; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.5;font-size:15px;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+h1,h2,h3{text-wrap:balance;margin:0}
+.mono{font-family:var(--mono)}
+.wrap{max-width:860px;margin:0 auto;padding-left:16px;padding-right:16px}
+.topbar{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;gap:12px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:600;letter-spacing:-.01em;cursor:pointer}
+.brand .dot{width:22px;height:22px;border-radius:6px;background:var(--accent);display:grid;place-items:center;color:var(--accent-ink);font-weight:700;font-size:13px;font-family:var(--mono)}
+.brand small{display:block;font-weight:500;color:var(--muted);font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.spacer{flex:1}
+.btn{font-family:inherit;font-size:14px;font-weight:600;border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 15px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;text-decoration:none}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{background:var(--accent-2);border-color:var(--accent-2)}
+.btn.sm{padding:6px 11px;font-size:13px}
+.btn.danger{color:var(--danger)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.theme-btn{border:1px solid var(--line);background:var(--surface);color:var(--muted);width:36px;height:36px;border-radius:var(--radius-sm);cursor:pointer;font-size:15px}
+main{padding-block:22px 64px}
+.eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.page-h{font-size:24px;font-weight:650;letter-spacing:-.02em;margin:4px 0 2px}
+.sub{color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:9px;text-decoration:none;color:inherit}
+.card:hover{border-color:var(--accent)}
+.card .cat{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.card .nm{font-size:16px;font-weight:600;letter-spacing:-.01em;overflow-wrap:anywhere}
+.card .br{color:var(--muted);font-size:13px}
+.card .foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px;padding-top:10px;border-top:1px solid var(--line)}
+.slug{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.co2{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;letter-spacing:.02em}
+.pill.pub,.pill.ok{color:var(--public);background:var(--public-bg)}
+.pill.auth{color:var(--authority);background:var(--authority-bg)}
+.pill.int{color:var(--internal);background:var(--internal-bg)}
+.empty{border:1px dashed var(--line);border-radius:var(--radius);padding:40px 22px;text-align:center;color:var(--muted);margin-top:18px;background:var(--surface)}
+.notice{border:1px solid var(--line);background:var(--surface-2);border-radius:var(--radius-sm);padding:12px 14px;font-size:13.5px;color:var(--muted);margin-top:16px}
+.chooser{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.choice{border:1.5px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:18px;cursor:pointer;text-align:left;font-family:inherit;color:var(--fg)}
+.choice:hover{border-color:var(--accent)}
+.choice.on{border-color:var(--accent);background:var(--public-bg)}
+.choice h3{font-size:16px;margin-bottom:4px}
+.choice p{margin:0;color:var(--muted);font-size:13px}
+.section{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:14px}
+.section>h3{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.field:last-child{margin-bottom:0}
+.field>label{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.req{color:var(--danger)}
+.u{color:var(--muted);font-weight:500;font-size:12px}
+.field input[type=text],.field input[type=number],.field input[type=url],.field textarea,.rep-row input{font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--fg);width:100%}
+.field textarea{resize:vertical;min-height:58px}
+.field input:focus,.field textarea:focus,.rep-row input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.field.invalid input,.field.invalid textarea{border-color:var(--danger)}
+.err{color:var(--danger);font-size:12px}
+.hint{color:var(--muted);font-size:12px}
+.check{display:flex;align-items:center;gap:9px;font-size:14px;cursor:pointer}
+.check input{width:17px;height:17px;accent-color:var(--accent)}
+.rep-row{display:flex;gap:8px;margin-bottom:7px}
+.rep-row input{min-width:0}
+.rep-row .rm{flex:0 0 auto;width:34px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:var(--radius-sm);cursor:pointer}
+.add-row{font-size:13px;color:var(--accent);background:none;border:none;cursor:pointer;padding:2px 0;font-weight:600;align-self:flex-start}
+.publishbar{position:sticky;bottom:0;z-index:15;margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.progress{flex:1;min-width:140px}
+.progress .bar{height:7px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.progress .bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+.progress small{color:var(--muted);font-size:12px}
+.pp-hero{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.pp-hero .main{flex:1;min-width:200px;display:flex;flex-direction:column;gap:6px}
+.pp-hero h1{font-size:23px;letter-spacing:-.02em}
+.pp-hero .br{color:var(--muted);font-weight:500}
+.qrbox{background:#fff;border-radius:var(--radius-sm);padding:10px;display:grid;place-items:center}
+.qrbox img,.qrbox canvas{display:block}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:16px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:13px}
+.fact .k{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.fact .v{font-size:18px;font-weight:650;margin-top:3px;font-family:var(--mono);letter-spacing:-.01em}
+.pp-sec{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.pp-sec h3{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.row{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:none}
+.row .k{color:var(--muted);font-size:13.5px}
+.row .v{font-weight:550;text-align:right;overflow-wrap:anywhere}
+.certs{display:flex;flex-wrap:wrap;gap:8px}
+.cert{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+.cert .n{font-family:var(--mono);color:var(--muted);font-weight:500}
+.foot-note{margin-top:22px;color:var(--muted);font-size:12px;text-align:center;line-height:1.6}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;text-decoration:none;margin-bottom:8px;font-weight:600}
+@media (max-width:480px){.chooser{grid-template-columns:1fr}.page-h{font-size:21px}}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <div class="brand" onclick="location.hash=''">
+    <span class="dot">C</span>
+    <span>Commited Pasaport<small>Dijital Ürün Pasaportu</small></span>
+  </div>
+  <span class="spacer"></span>
+  <button class="theme-btn" id="themeBtn" title="Tema" aria-label="Tema değiştir">◐</button>
+</div></div>
+<main><div class="wrap" id="app"></div></main>
+
+<script>
+"use strict";
+/* ---------- field schema (common + category) ---------- */
+var COMMON=[
+ {title:"Kimlik",fields:[
+   {c:"product_name",l:"Ürün adı",t:"TEXT",r:1,a:"PUBLIC"},
+   {c:"brand",l:"Marka",t:"TEXT",r:1,a:"PUBLIC"},
+   {c:"sku",l:"Model / SKU",t:"TEXT",r:1,a:"PUBLIC"},
+   {c:"weight_g",l:"Ağırlık",t:"NUMBER",u:"g",a:"PUBLIC"},
+   {c:"color",l:"Renk",t:"TEXT",a:"PUBLIC"}]},
+ {title:"Menşe",fields:[
+   {c:"country_origin",l:"Menşe ülkesi",t:"TEXT",r:1,a:"PUBLIC"},
+   {c:"facility",l:"Üretim tesisi",t:"TEXT",r:1,a:"AUTHORITY"}]},
+ {title:"Çevresel performans",fields:[
+   {c:"carbon",l:"Karbon ayak izi",t:"NUMBER",u:"kgCO₂e",a:"PUBLIC",note:"Commited karbon motoru ile hesaplanır"}]}
+];
+var TAIL=[
+ {title:"Kullanım ve yaşam sonu",fields:[
+   {c:"care",l:"Bakım talimatları",t:"LONG",r:1,a:"PUBLIC"},
+   {c:"end_of_life",l:"Geri dönüşüm / bertaraf",t:"LONG",r:1,a:"PUBLIC"}]},
+ {title:"Sertifikalar",fields:[
+   {c:"certificates",l:"Sertifikalar",t:"REP",a:"PUBLIC",sub:[{c:"type",l:"Tür (ör. GOTS)"},{c:"number",l:"No"}]}]}
+];
+var TEXTILE=[
+ {title:"Malzeme",fields:[
+   {c:"fiber_composition",l:"Lif kompozisyonu",t:"REP",r:1,a:"PUBLIC",sub:[{c:"fiber",l:"Lif"},{c:"pct",l:"%",t:"NUMBER"}]},
+   {c:"recycled_content",l:"Geri dönüştürülmüş içerik",t:"NUMBER",u:"%",a:"PUBLIC"},
+   {c:"fabric_weight",l:"Kumaş gramajı",t:"NUMBER",u:"g/m²",a:"PUBLIC"}]},
+ {title:"Kimyasal güvenlik",fields:[
+   {c:"reach",l:"REACH uyumlu",t:"BOOL",r:1,a:"PUBLIC"},
+   {c:"azo_free",l:"Azo boya içermez",t:"BOOL",r:1,a:"AUTHORITY"},
+   {c:"svhc",l:"SVHC (>%0,1) notu",t:"LONG",a:"AUTHORITY"}]},
+ {title:"Tedarik zinciri",fields:[
+   {c:"tier1_processes",l:"Tier 1 süreçler",t:"LONG",r:1,a:"AUTHORITY",note:"ör. boyama, dikim"},
+   {c:"tier1_suppliers",l:"Tier 1 tedarikçiler",t:"REP",a:"AUTHORITY",sub:[{c:"name",l:"Tedarikçi"}]}]},
+ {title:"Dayanıklılık",fields:[
+   {c:"durability",l:"Dayanıklılık / onarılabilirlik",t:"LONG",a:"PUBLIC"}]}
+];
+var ELECTRONICS=[
+ {title:"Malzeme",fields:[
+   {c:"material_comp",l:"Malzeme bileşimi",t:"REP",r:1,a:"PUBLIC",sub:[{c:"mat",l:"Malzeme"},{c:"pct",l:"%",t:"NUMBER"}]},
+   {c:"crm",l:"Kritik hammaddeler",t:"LONG",a:"AUTHORITY"}]},
+ {title:"Madde uyumu",fields:[
+   {c:"rohs",l:"RoHS uyumlu",t:"BOOL",r:1,a:"PUBLIC"},
+   {c:"reach_scip",l:"REACH / SCIP notu",t:"LONG",a:"AUTHORITY"}]},
+ {title:"Enerji",fields:[
+   {c:"energy_class",l:"Enerji verimlilik sınıfı",t:"TEXT",a:"PUBLIC"},
+   {c:"power_kwh_year",l:"Güç tüketimi",t:"NUMBER",u:"kWh/yıl",a:"PUBLIC"}]},
+ {title:"Dayanıklılık ve onarım",fields:[
+   {c:"repair_score",l:"Onarılabilirlik skoru",t:"NUMBER",a:"PUBLIC"},
+   {c:"spare_years",l:"Yedek parça süresi",t:"NUMBER",u:"yıl",a:"PUBLIC"},
+   {c:"sw_update_years",l:"Yazılım güncelleme süresi",t:"NUMBER",u:"yıl",a:"PUBLIC"}]},
+ {title:"Güvenlik ve batarya",fields:[
+   {c:"ce_mark",l:"CE işareti",t:"BOOL",r:1,a:"PUBLIC"},
+   {c:"battery_passport",l:"Batarya pasaportu bağlantısı",t:"URL",a:"PUBLIC"}]},
+ {title:"Yaşam sonu",fields:[
+   {c:"weee",l:"WEEE / geri dönüşüm bilgisi",t:"LONG",r:1,a:"PUBLIC"}]}
+];
+var CATS={
+  TEXTILE:{label:"Tekstil",desc:"Hazır giyim, ev tekstili, aksesuar",sections:COMMON.concat(TEXTILE,TAIL)},
+  ELECTRONICS:{label:"Elektronik",desc:"Tüketici elektroniği, cihazlar",sections:COMMON.concat(ELECTRONICS,TAIL)}
+};
+function fieldsOf(cat){var o=[];CATS[cat].sections.forEach(function(s){s.fields.forEach(function(f){o.push(f)})});return o;}
+function fieldDef(cat,code){return fieldsOf(cat).filter(function(f){return f.c===code})[0];}
+
+/* ---------- example passport (clearly labeled sample data) ---------- */
+var EXAMPLE={slug:"ornek-havlu",category:"TEXTILE",example:true,createdAt:0,values:{
+  product_name:"Örnek Pamuklu Havlu 50×90",brand:"Örnek Marka",sku:"DEMO-HVL-5090",weight_g:"280",color:"Doğal beyaz",
+  country_origin:"Türkiye",facility:"Örnek Tekstil A.Ş., Denizli",carbon:"2.4",
+  fiber_composition:[{fiber:"Organik pamuk",pct:"80"},{fiber:"Geri dönüştürülmüş pamuk",pct:"20"}],
+  recycled_content:"20",fabric_weight:"500",reach:true,azo_free:true,
+  tier1_processes:"İplik, dokuma, boyama, konfeksiyon",tier1_suppliers:[{name:"Örnek İplik Ltd."}],
+  durability:"60°C'de 200 yıkamaya dayanıklı",care:"60°C'de yıkayın, ağartıcı kullanmayın",
+  end_of_life:"Tekstil geri dönüşüm kutusuna atınız",certificates:[{type:"GOTS",number:"DEMO-0001"}]}};
+
+/* ---------- helpers ---------- */
+var app=document.getElementById("app");
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function genSlug(){var s="",a="abcdefghijkmnpqrstuvwxyz23456789";for(var i=0;i<8;i++)s+=a[Math.floor(Math.random()*a.length)];return s;}
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function lsDel(k){try{localStorage.removeItem(k)}catch(e){}}
+(function(){var t=lsGet("dpp-theme");if(t)document.documentElement.setAttribute("data-theme",t);})();
+document.getElementById("themeBtn").onclick=function(){
+  var dark=document.documentElement.getAttribute("data-theme")==="dark";
+  var t=dark?"light":"dark";document.documentElement.setAttribute("data-theme",t);lsSet("dpp-theme",t);
+};
+/* passport <-> URL token (so a QR opens on any device, no server needed) */
+function encodeP(p){
+  var json=JSON.stringify({c:p.category,v:p.values,x:p.example?1:0});
+  var b=btoa(unescape(encodeURIComponent(json)));
+  return b.replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function decodeP(tok){
+  try{var b=tok.replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";
+    var o=JSON.parse(decodeURIComponent(escape(atob(b))));
+    if(!o||!CATS[o.c])return null;
+    return {category:o.c,values:o.v||{},example:!!o.x};
+  }catch(e){return null}
+}
+
+/* ---------- local store (this browser) ---------- */
+function loadAll(){var o={};try{o=JSON.parse(lsGet("dpp-passports")||"{}")||{}}catch(e){o={}}return o;}
+function saveAll(o){lsSet("dpp-passports",JSON.stringify(o));}
+
+/* ---------- router ---------- */
+window.addEventListener("hashchange",route);
+function route(){
+  var h=(location.hash||"").replace(/^#/,"");
+  window.scrollTo(0,0);
+  if(h==="new")return renderWizard();
+  if(h.indexOf("v/")===0){var p=decodeP(h.slice(2));return p?paintPublic(p,null):notFound();}
+  if(h.indexOf("p/")===0){var id=h.slice(2);var all=loadAll();
+    if(id===EXAMPLE.slug)return paintPublic(EXAMPLE,id);
+    return all[id]?paintPublic(all[id],id):notFound();}
+  return renderPortal();
+}
+function notFound(){app.innerHTML=head("Pasaport bulunamadı","")+'<div class="empty">Bu bağlantıya ait pasaport bulunamadı.</div><a class="back" href="#">‹ Panele dön</a>';}
+
+/* ---------- portal ---------- */
+function card(id,p){
+  var co=p.values&&p.values.carbon;
+  return '<a class="card" href="#p/'+esc(id)+'">'
+    +'<span class="cat">'+esc((CATS[p.category]||{}).label||p.category)+(p.example?' · örnek':'')+'</span>'
+    +'<span class="nm">'+esc(p.values.product_name||"(adsız)")+'</span>'
+    +'<span class="br">'+esc(p.values.brand||"")+'</span>'
+    +'<span class="foot"><span class="slug">#'+esc(id)+'</span>'
+    +(co?'<span class="co2">'+esc(co)+' kgCO₂e</span>':'')+'</span></a>';
+}
+function renderPortal(){
+  var all=loadAll(),ids=Object.keys(all).sort(function(a,b){return (all[b].createdAt||0)-(all[a].createdAt||0)});
+  var h=head("Üretici paneli","Ürün verilerini girin, pasaport oluşturun ve QR kod ile yayınlayın.")
+   +'<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap"><a class="btn primary" href="#new">+ Yeni pasaport</a></div>'
+   +'<div class="grid">'+card(EXAMPLE.slug,EXAMPLE);
+  ids.forEach(function(id){h+=card(id,all[id]);});
+  h+='</div><div class="notice">Bu bir demo sürümüdür: oluşturduğunuz pasaportlar yalnızca bu tarayıcıda saklanır. '
+   +'QR kod ise pasaport verisini bağlantının içinde taşır, bu yüzden başka bir cihazdan da açılır. '
+   +'Kurumsal kullanım için <a href="https://commitedevents.app" target="_top">Commited</a> ile iletişime geçin.</div>';
+  app.innerHTML=h;
+}
+
+/* ---------- wizard ---------- */
+var draft={category:null,values:{}};
+function renderWizard(){
+  draft={category:null,values:{}};
+  try{var d=lsGet("dpp-draft");if(d)draft=JSON.parse(d)||draft}catch(e){}
+  if(!draft.values)draft.values={};
+  paintWizard();
+}
+function saveDraft(){lsSet("dpp-draft",JSON.stringify(draft));}
+function paintWizard(){
+  var h='<a class="back" href="#">‹ Panele dön</a>'+head("Yeni pasaport","Ürün kategorisini seçin, verileri girin, yayınlayın.");
+  h+='<div class="chooser">'
+   +'<button class="choice'+(draft.category==="TEXTILE"?" on":"")+'" onclick="pickCat(\'TEXTILE\')"><h3>Tekstil</h3><p>'+CATS.TEXTILE.desc+'</p></button>'
+   +'<button class="choice'+(draft.category==="ELECTRONICS"?" on":"")+'" onclick="pickCat(\'ELECTRONICS\')"><h3>Elektronik</h3><p>'+CATS.ELECTRONICS.desc+'</p></button>'
+   +'</div>';
+  if(draft.category)h+='<div id="form"></div>';
+  app.innerHTML=h;
+  if(draft.category)paintForm();
+}
+window.pickCat=function(c){draft.category=c;saveDraft();paintWizard();};
+function badge(a){var m={PUBLIC:["pub","Herkese açık"],AUTHORITY:["auth","Otorite"],INTERNAL:["int","İç"]}[a]||["int",a];
+  return '<span class="pill '+m[0]+'">'+m[1]+'</span>';}
+function paintForm(){
+  var v=draft.values,html="";
+  CATS[draft.category].sections.forEach(function(s){
+    html+='<div class="section"><h3>'+esc(s.title)+'</h3>';
+    s.fields.forEach(function(f){html+=renderField(f,v[f.c]);});
+    html+='</div>';
+  });
+  html+='<div class="publishbar"><div class="progress"><div class="bar"><i id="pbar"></i></div><small id="ptext"></small></div>'
+    +'<button class="btn primary" id="pubBtn" onclick="publish()">Yayınla ve QR oluştur</button></div>';
+  document.getElementById("form").innerHTML=html;
+  updateProgress();
+}
+function renderField(f,val){
+  var id="f_"+f.c;
+  var lab='<label for="'+id+'">'+esc(f.l)+(f.r?' <span class="req">*</span>':'')+(f.u?' <span class="u">('+esc(f.u)+')</span>':'')+' '+badge(f.a)+'</label>';
+  var body;
+  if(f.t==="BOOL"){
+    body='<label class="check"><input type="checkbox" id="'+id+'" '+(val?"checked":"")+' onchange="setVal(\''+f.c+'\',this.checked)"> Evet</label>';
+  }else if(f.t==="REP"){
+    body='<div id="rep_'+f.c+'">'+repRows(f,val)+'</div><button type="button" class="add-row" onclick="repAdd(\''+f.c+'\')">+ Satır ekle</button>';
+  }else if(f.t==="LONG"){
+    body='<textarea id="'+id+'" oninput="setVal(\''+f.c+'\',this.value)">'+esc(val||"")+'</textarea>';
+  }else{
+    var typ=f.t==="NUMBER"?"number":(f.t==="URL"?"url":"text");
+    body='<input type="'+typ+'" id="'+id+'" value="'+esc(val==null?"":val)+'" oninput="setVal(\''+f.c+'\',this.value)">';
+  }
+  return '<div class="field" id="field_'+f.c+'">'+lab+body+(f.note?'<span class="hint">'+esc(f.note)+'</span>':'')+'<span class="err" id="err_'+f.c+'" hidden></span></div>';
+}
+function repRows(f,val){val=val&&val.length?val:[{}];return val.map(function(r,i){return repRow(f,i,r)}).join("");}
+function repRow(f,i,row){
+  row=row||{};var h='<div class="rep-row">';
+  f.sub.forEach(function(sf){
+    h+='<input type="'+(sf.t==="NUMBER"?"number":"text")+'" placeholder="'+esc(sf.l)+'" aria-label="'+esc(sf.l)+'" value="'+esc(row[sf.c]==null?"":row[sf.c])
+      +'" oninput="repSet(\''+f.c+'\','+i+',\''+sf.c+'\',this.value)">';
+  });
+  return h+'<button type="button" class="rm" onclick="repDel(\''+f.c+'\','+i+')" aria-label="Sil">×</button></div>';
+}
+window.setVal=function(c,v){draft.values[c]=v;saveDraft();clearErr(c);updateProgress();};
+window.repSet=function(c,i,sc,v){var a=draft.values[c]||[];while(a.length<=i)a.push({});a[i][sc]=v;draft.values[c]=a;saveDraft();clearErr(c);updateProgress();};
+window.repAdd=function(c){var f=fieldDef(draft.category,c);var a=draft.values[c]||[{}];if(!a.length)a.push({});a.push({});draft.values[c]=a;
+  document.getElementById("rep_"+c).innerHTML=repRows(f,a);saveDraft();};
+window.repDel=function(c,i){var f=fieldDef(draft.category,c);var a=draft.values[c]||[];a.splice(i,1);draft.values[c]=a;
+  document.getElementById("rep_"+c).innerHTML=repRows(f,a);saveDraft();updateProgress();};
+function clearErr(c){var el=document.getElementById("field_"+c);if(el)el.classList.remove("invalid");var e=document.getElementById("err_"+c);if(e)e.hidden=true;}
+function filled(f,v){
+  if(v==null||v==="")return false;
+  if(f.t==="REP")return Array.isArray(v)&&v.some(function(r){return f.sub.some(function(sf){return r&&r[sf.c]!=null&&r[sf.c]!==""})});
+  if(f.t==="BOOL")return v===true;
+  return true;
+}
+function updateProgress(){
+  var req=fieldsOf(draft.category).filter(function(f){return f.r;});
+  var done=req.filter(function(f){return filled(f,draft.values[f.c]);}).length;
+  var bar=document.getElementById("pbar"),tx=document.getElementById("ptext");
+  if(bar)bar.style.width=(req.length?Math.round(done/req.length*100):100)+"%";
+  if(tx)tx.textContent=done+" / "+req.length+" zorunlu alan";
+}
+function cleanVals(v){var o={};for(var k in v){var x=v[k];
+  if(Array.isArray(x)){x=x.filter(function(r){return r&&Object.keys(r).some(function(kk){return r[kk]!=null&&r[kk]!==""})});if(x.length)o[k]=x;}
+  else if(x!=null&&x!==""&&x!==false)o[k]=x;}
+  return o;}
+window.publish=function(){
+  var bad=fieldsOf(draft.category).filter(function(f){return f.r&&!filled(f,draft.values[f.c]);});
+  if(bad.length){
+    bad.forEach(function(f){var el=document.getElementById("field_"+f.c);if(el)el.classList.add("invalid");
+      var e=document.getElementById("err_"+f.c);if(e){e.textContent="Zorunlu alan";e.hidden=false;}});
+    var first=document.getElementById("field_"+bad[0].c);if(first)first.scrollIntoView({behavior:"smooth",block:"center"});
+    return;
+  }
+  var slug=genSlug(),all=loadAll();
+  all[slug]={category:draft.category,values:cleanVals(draft.values),createdAt:Date.now()};
+  saveAll(all);lsDel("dpp-draft");draft={category:null,values:{}};
+  location.hash="p/"+slug;
+};
+window.delP=function(id){if(!confirm("Bu pasaport bu tarayıcıdan silinsin mi?"))return;var all=loadAll();delete all[id];saveAll(all);location.hash="";};
+
+/* ---------- public passport ---------- */
+var showAuth=false;
+function paintPublic(p,localId){
+  var cat=p.category,v=p.values||{};
+  var base=location.href.split("#")[0];
+  var url=base+"#v/"+encodeP(p);
+  var co=v.carbon,rc=v.recycled_content;
+  var h='<a class="back" href="#">‹ Panele dön</a>';
+  h+='<div class="pp-hero"><div class="main">'
+    +'<span class="eyebrow">'+esc(CATS[cat].label)+' · Dijital Ürün Pasaportu</span>'
+    +'<h1>'+esc(v.product_name||"(adsız ürün)")+'</h1>'
+    +'<div class="br">'+esc(v.brand||"")+(v.sku?' · <span class="mono">'+esc(v.sku)+'</span>':'')+'</div>'
+    +'<div style="margin-top:6px">'+(p.example?'<span class="pill auth">Örnek veri</span>':'<span class="pill ok">Demo pasaport</span>')+'</div>'
+    +'</div><div><div class="qrbox" id="qr"></div><div style="text-align:center;margin-top:6px" class="slug">Okutun ve açın</div></div></div>';
+  h+='<div class="facts">';
+  if(co)h+=fact("Karbon ayak izi",esc(co)+" kgCO₂e");
+  if(rc)h+=fact("Geri dönüştürülmüş","%"+esc(rc));
+  if(v.country_origin)h+=fact("Menşe",esc(v.country_origin));
+  if(cat==="ELECTRONICS"&&v.energy_class)h+=fact("Enerji sınıfı",esc(v.energy_class));
+  h+='</div>';
+  CATS[cat].sections.forEach(function(s){
+    var rows=s.fields.filter(function(f){return (f.a!=="AUTHORITY"||showAuth)&&filled(f,v[f.c]);});
+    if(!rows.length)return;
+    if(s.title==="Sertifikalar"){
+      h+='<div class="pp-sec"><h3>Sertifikalar</h3><div class="certs">';
+      (v.certificates||[]).forEach(function(c){if(!c.type&&!c.number)return;h+='<span class="cert">'+esc(c.type||"Sertifika")+(c.number?' <span class="n">'+esc(c.number)+'</span>':'')+'</span>';});
+      h+='</div></div>';return;
+    }
+    h+='<div class="pp-sec"><h3>'+esc(s.title)+'</h3>';
+    rows.forEach(function(f){h+='<div class="row"><span class="k">'+esc(f.l)+(f.a==="AUTHORITY"?' '+badge("AUTHORITY"):'')+'</span><span class="v">'+esc(fmtVal(f,v[f.c]))+'</span></div>';});
+    h+='</div>';
+  });
+  h+='<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">'
+    +'<button class="btn sm" onclick="toggleAuth()">'+(showAuth?"Otorite alanlarını gizle":"Otorite görünümü (gümrük/denetim)")+'</button>'
+    +'<button class="btn sm" id="copyBtn">Bağlantıyı kopyala</button>'
+    +(localId&&!p.example?'<button class="btn sm danger" onclick="delP(\''+esc(localId)+'\')">Sil</button>':'')+'</div>';
+  h+='<div class="foot-note">Bu pasaport ESPR (AB 2024/1781) veri yapısına göre hazırlanmış bir demodur.<br>Powered by <b>Commited</b> · Dijital Ürün Pasaportu</div>';
+  app.innerHTML=h;
+  document.getElementById("copyBtn").onclick=function(){
+    var b=this;try{navigator.clipboard.writeText(url).then(function(){b.textContent="Kopyalandı ✓";setTimeout(function(){b.textContent="Bağlantıyı kopyala"},1500)},function(){prompt("Bağlantı:",url)})}catch(e){prompt("Bağlantı:",url)}
+  };
+  try{new QRCode(document.getElementById("qr"),{text:url,width:160,height:160,colorDark:"#15201B",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.L});}
+  catch(e){document.getElementById("qr").innerHTML='<span class="slug">QR oluşturulamadı</span>';}
+}
+window.toggleAuth=function(){showAuth=!showAuth;route();};
+function fact(k,v){return '<div class="fact"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';}
+function fmtVal(f,v){
+  if(f.t==="BOOL")return v?"Evet":"Hayır";
+  if(f.t==="REP"){
+    if(f.c==="fiber_composition"||f.c==="material_comp")return v.map(function(r){return (r.fiber||r.mat||"")+(r.pct?" %"+r.pct:"");}).filter(Boolean).join(", ");
+    return v.map(function(r){return r.name||r.type||Object.values(r).filter(Boolean).join(" ");}).filter(Boolean).join(", ");
+  }
+  return v+(f.u?" "+f.u:"");
+}
+function head(title,sub){return '<span class="eyebrow">Commited · DPP</span><h1 class="page-h">'+esc(title)+'</h1>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'');}
+
+route();
+</script>
+</body>
+</html>
