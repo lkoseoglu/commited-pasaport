@@ -190,6 +190,8 @@ main{padding-block:22px 64px}
 .doc:hover{border-color:var(--accent)}
 .doc .fi{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--danger);border:1px solid currentColor;border-radius:4px;padding:1px 4px}
 .dpp-label .lp{flex:0 0 auto;width:22mm;height:22mm;object-fit:cover;border-radius:2mm}
+.estpub h3{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+#estBox h3{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
 .jsonbox{width:100%;min-height:220px;font-family:var(--mono);font-size:12px;padding:10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--fg)}
 @media print{
   @page{margin:8mm}
@@ -231,7 +233,8 @@ var COMMON=[
    {c:"country_origin",l:"Menşe ülkesi",t:"TEXT",r:1,a:"PUBLIC"},
    {c:"facility",l:"Üretim tesisi",t:"TEXT",r:1,a:"AUTHORITY"}]},
  {title:"Çevresel performans",fields:[
-   {c:"carbon",l:"Karbon ayak izi",t:"NUMBER",u:"kgCO₂e",a:"PUBLIC",note:"Commited karbon motoru ile hesaplanır"}]}
+   {c:"carbon",l:"Karbon ayak izi (üretici beyanı)",t:"NUMBER",u:"kgCO₂e / ürün",a:"PUBLIC",note:"Kendi hesapladığınız veya doğrulattığınız değer. Boş bırakırsanız pasaportta Commited ön hesaplaması (tahmini) gösterilir."},
+   {c:"carbon_method",l:"Hesaplama yöntemi ve kapsamı",t:"TEXT",a:"PUBLIC",note:"ör. ISO 14067, cradle-to-gate, üçüncü taraf doğrulamalı"}]}
 ];
 var TAIL=[
  {title:"Kullanım ve yaşam sonu",fields:[
@@ -256,7 +259,11 @@ var TEXTILE=[
    {c:"tier1_processes",l:"Tier 1 süreçler",t:"LONG",r:1,a:"AUTHORITY",note:"ör. boyama, dikim"},
    {c:"tier1_suppliers",l:"Tier 1 tedarikçiler",t:"REP",a:"AUTHORITY",sub:[{c:"name",l:"Tedarikçi"}]}]},
  {title:"Dayanıklılık",fields:[
-   {c:"durability",l:"Dayanıklılık / onarılabilirlik",t:"LONG",a:"PUBLIC"}]}
+   {c:"durability",l:"Dayanıklılık / onarılabilirlik",t:"LONG",a:"PUBLIC"}]},
+ {title:"Karbon ön hesaplama girdileri",fields:[
+   {c:"elec_kwh",l:"Ürün başına elektrik",t:"NUMBER",u:"kWh",a:"AUTHORITY",note:"Aylık elektrik tüketimi ÷ aylık üretim adedi (iplik, dokuma, boyama, konfeksiyon dahil)"},
+   {c:"gas_kwh",l:"Ürün başına doğalgaz",t:"NUMBER",u:"kWh",a:"AUTHORITY",note:"Faturadaki kWh ÷ aylık üretim adedi"},
+   {c:"waste_pct",l:"Üretim firesi",t:"NUMBER",u:"%",a:"AUTHORITY",note:"Kesim ve üretim kaybı; bilinmiyorsa boş bırakın"}]}
 ];
 var ELECTRONICS=[
  {title:"Malzeme",fields:[
@@ -314,7 +321,7 @@ var EXAMPLE={id:"ornek-havlu",category:"TEXTILE",example:true,values:{
 
 /* ---------- i18n (TR / EN) ---------- */
 var EN_F={product_name:"Product name",brand:"Brand",sku:"Model / SKU",photos:"Product photos",cert_docs:"Certificate documents",tech_docs:"Technical documents",gtin:"GTIN (barcode)",lot:"Batch / lot no",serial:"Serial no",weight_g:"Weight",color:"Colour",
- country_origin:"Country of origin",facility:"Manufacturing facility",carbon:"Carbon footprint",
+ country_origin:"Country of origin",facility:"Manufacturing facility",carbon:"Carbon footprint (manufacturer declaration)",carbon_method:"Calculation method and scope",elec_kwh:"Electricity per product",gas_kwh:"Natural gas per product",waste_pct:"Production waste",
  care:"Care instructions",end_of_life:"Recycling / disposal",certificates:"Certificates",
  fiber_composition:"Fibre composition",recycled_content:"Recycled content",fabric_weight:"Fabric weight",
  reach:"REACH compliant",azo_free:"Free of azo dyes",svhc:"SVHC (>0.1%) note",
@@ -323,13 +330,13 @@ var EN_F={product_name:"Product name",brand:"Brand",sku:"Model / SKU",photos:"Pr
  energy_class:"Energy efficiency class",power_kwh_year:"Power consumption",repair_score:"Repairability score",
  spare_years:"Spare parts availability",sw_update_years:"Software update period",ce_mark:"CE marking",
  battery_passport:"Battery passport link",weee:"WEEE / recycling information"};
-var EN_U={"yıl":"years","kWh/yıl":"kWh/year"};
+var EN_U={"yıl":"years","kWh/yıl":"kWh/year","kgCO₂e / ürün":"kgCO₂e / product"};
 var EN_S={"Kimlik":"Identity","Menşe":"Origin","Çevresel performans":"Environmental performance",
  "Kullanım ve yaşam sonu":"Use and end of life","Sertifikalar":"Certificates","Malzeme":"Materials",
  "Kimyasal güvenlik":"Chemical safety","Tedarik zinciri":"Supply chain","Dayanıklılık":"Durability",
  "Madde uyumu":"Substance compliance","Enerji":"Energy","Dayanıklılık ve onarım":"Durability and repair",
- "Güvenlik ve batarya":"Safety and battery","Yaşam sonu":"End of life","Teknik dosya":"Technical file"};
-var EN_N={"En fazla 3 fotoğraf · JPG, PNG veya WebP · dosya başına 10 MB":"Up to 3 photos · JPG, PNG or WebP · 10 MB per file","Sertifikaların PDF kopyaları · herkese açık":"PDF copies of certificates · public","Test raporları, REACH/SVHC beyanları, uygunluk beyanı · yalnızca siz ve yetkililer görür":"Test reports, REACH/SVHC declarations, declaration of conformity · visible only to you and authorities","Commited karbon motoru ile hesaplanır":"Calculated with the Commited carbon engine","ör. boyama, dikim":"e.g. dyeing, sewing",
+ "Güvenlik ve batarya":"Safety and battery","Yaşam sonu":"End of life","Teknik dosya":"Technical file","Karbon ön hesaplama girdileri":"Carbon pre-calculation inputs"};
+var EN_N={"Kendi hesapladığınız veya doğrulattığınız değer. Boş bırakırsanız pasaportta Commited ön hesaplaması (tahmini) gösterilir.":"Your own calculated or verified value. If left empty, the passport shows the Commited pre-calculation (estimate).","ör. ISO 14067, cradle-to-gate, üçüncü taraf doğrulamalı":"e.g. ISO 14067, cradle-to-gate, third-party verified","Aylık elektrik tüketimi ÷ aylık üretim adedi (iplik, dokuma, boyama, konfeksiyon dahil)":"Monthly electricity use ÷ monthly units produced (incl. spinning, weaving, dyeing, making)","Faturadaki kWh ÷ aylık üretim adedi":"kWh on the bill ÷ monthly units produced","Kesim ve üretim kaybı; bilinmiyorsa boş bırakın":"Cutting and production loss; leave empty if unknown","En fazla 3 fotoğraf · JPG, PNG veya WebP · dosya başına 10 MB":"Up to 3 photos · JPG, PNG or WebP · 10 MB per file","Sertifikaların PDF kopyaları · herkese açık":"PDF copies of certificates · public","Test raporları, REACH/SVHC beyanları, uygunluk beyanı · yalnızca siz ve yetkililer görür":"Test reports, REACH/SVHC declarations, declaration of conformity · visible only to you and authorities","Commited karbon motoru ile hesaplanır":"Calculated with the Commited carbon engine","ör. boyama, dikim":"e.g. dyeing, sewing",
  "GS1 Türkiye'den alınan 8, 12, 13 veya 14 haneli numara — kontrol hanesi doğrulanır":"8, 12, 13 or 14-digit number from GS1 — check digit is validated",
  "Parti düzeyinde pasaport için (GS1 AI 10)":"For batch-level passports (GS1 AI 10)","Tekil ürün düzeyinde pasaport için (GS1 AI 21)":"For item-level passports (GS1 AI 21)"};
 var EN_SUB={"Tür (ör. GOTS)":"Type (e.g. GOTS)","Lif":"Fibre","Malzeme":"Material","Tedarikçi":"Supplier"};
@@ -345,6 +352,13 @@ var UI={
   auth_note:"Üretim tesisi, tedarikçiler ve kimyasal madde notları gibi otorite alanları yalnızca yetkili kişilere açıktır.",
   foot:"Bu pasaport ESPR (AB 2024/1781) veri yapısına göre hazırlanmıştır.",
   lang_note:"Girilen değerler (ör. bakım talimatı) yazıldığı dilde gösterilir.",lang_note_en:"Bazı açıklamaların İngilizce karşılığı girilmemiş; bunlar yazıldığı dilde gösterilir.",
+  est_t:"Commited ön hesaplaması",est_tag:"tahmini",decl_tag:"üretici beyanı",est_partial:"kısmi",
+  est_mat:"Lif üretimi",est_elec:"Üretim elektriği",est_gas:"Üretim doğalgazı",est_total:"Toplam (ürün başına)",
+  est_scope:"Kapsam: cradle-to-gate (lif üretimi + üretim enerjisi). Nakliye, ambalaj, kullanım ve yaşam sonu dahil değildir.",
+  est_disc:"Bu bir ön hesaplamadır; ISO 14067 uyumlu, doğrulanmış bir karbon ayak izi değildir. Doğrulanmış değer için Commited ile iletişime geçin.",
+  est_need_w:"Ağırlık girilmeli",est_need_f:"Lif kompozisyonu girilmeli",est_sum:"Lif oranları toplamı %100 olmalı",est_nofactor:"Bu lif için kaynaklı faktör yok",
+  est_noenergy:"Üretim enerjisi girilmedi; toplam yalnızca lif aşamasını içerir.",est_none:"Ön hesaplama için eksik veri:",est_src:"Kaynaklar",est_recy:"Geri dönüştürülmüş lifler için ihtiyatlı olarak birincil lif faktörü kullanılır.",
+  est_live:"Girdikçe güncellenir. Pasaportta, üretici beyanı yoksa bu değer \"tahmini\" etiketiyle gösterilir.",carbon_t:"Karbon ayak izi",method:"Yöntem",
   add_photo:"+ Fotoğraf ekle",add_pdf:"+ PDF ekle",uploading:"Yükleniyor…",too_big:"Dosya 10 MB'dan büyük",bad_type:"Bu dosya türü desteklenmiyor",max_files:"En fazla dosya sayısına ulaşıldı",up_fail:"Yükleme başarısız",view:"Görüntüle",en_twin:"İngilizce karşılığı",en_twin_hint:"İsteğe bağlı · pasaport İngilizce açıldığında bu metin gösterilir",docs:"Belgeler",wait_up:"Yüklemeler bitene kadar bekleyin",qr_lang:"QR dili",
   ids:"Tanımlayıcılar",dl:"GS1 Digital Link",gran:"Pasaport düzeyi",g_model:"Model",g_batch:"Parti",g_item:"Tekil ürün",
   label_btn:"QR etiketi",label_t:"Ürün etiketi",print:"Yazdır / PDF",
@@ -361,6 +375,13 @@ var UI={
   auth_note:"Authority fields such as the manufacturing facility, suppliers and chemical substance notes are only available to authorised parties.",
   foot:"This passport follows the ESPR (EU 2024/1781) data structure.",
   lang_note:"Entered values (e.g. care instructions) are shown in the language they were written in.",lang_note_en:"Some descriptions have no English version yet and are shown in the original language.",
+  est_t:"Commited pre-calculation",est_tag:"estimate",decl_tag:"manufacturer declaration",est_partial:"partial",
+  est_mat:"Fibre production",est_elec:"Production electricity",est_gas:"Production natural gas",est_total:"Total (per product)",
+  est_scope:"Scope: cradle-to-gate (fibre production + production energy). Transport, packaging, use and end of life are excluded.",
+  est_disc:"This is a pre-calculation, not a verified ISO 14067 carbon footprint. Contact Commited for a verified value.",
+  est_need_w:"Weight is required",est_need_f:"Fibre composition is required",est_sum:"Fibre shares must add up to 100%",est_nofactor:"No sourced factor for this fibre",
+  est_noenergy:"Production energy not entered; the total covers the fibre stage only.",est_none:"Missing data for the pre-calculation:",est_src:"Sources",est_recy:"For recycled fibres the virgin fibre factor is used as a conservative assumption.",
+  est_live:"Updates as you type. If there is no manufacturer declaration, the passport shows this value labelled \"estimate\".",carbon_t:"Carbon footprint",method:"Method",
   add_photo:"+ Add photo",add_pdf:"+ Add PDF",uploading:"Uploading…",too_big:"File is larger than 10 MB",bad_type:"This file type is not supported",max_files:"Maximum number of files reached",up_fail:"Upload failed",view:"View",en_twin:"English version",en_twin_hint:"Optional · shown when the passport is opened in English",docs:"Documents",wait_up:"Please wait for uploads to finish",qr_lang:"QR language",
   ids:"Identifiers",dl:"GS1 Digital Link",gran:"Passport level",g_model:"Model",g_batch:"Batch",g_item:"Item",
   label_btn:"QR label",label_t:"Product label",print:"Print / PDF",
@@ -611,6 +632,7 @@ function paintForm(){
     html+='<div class="section"><h3>'+esc(SL(s.title))+'</h3>';
     s.fields.forEach(function(f){html+=renderField(f,v[f.c]);});
     html+='</div>';
+    if(s.title==="Karbon ön hesaplama girdileri")html+='<div class="section" id="estBox"></div>';
   });
   html+='<div class="publishbar"><div class="progress"><div class="bar"><i id="pbar"></i></div><small id="ptext"></small></div>'
     +'<button class="btn primary" id="pubBtn" onclick="publish()">'+(draft.id?"Değişiklikleri kaydet":"Yayınla ve QR oluştur")+'</button></div>';
@@ -670,6 +692,7 @@ function updateProgress(){
   var bar=document.getElementById("pbar"),tx=document.getElementById("ptext");
   if(bar)bar.style.width=(req.length?Math.round(done/req.length*100):100)+"%";
   if(tx)tx.textContent=done+" / "+req.length+" "+T("req_count");
+  paintEst();
 }
 function cleanVal(x){
   if(Array.isArray(x)){x=x.filter(function(r){return r&&Object.keys(r).some(function(kk){return r[kk]!=null&&r[kk]!==""})});return x.length?x:undefined;}
@@ -687,6 +710,8 @@ window.publish=function(){
   }
   if(uploadsBusy>0){alert(T("wait_up"));return;}
   var pub={},priv={};
+  var est=estimateCarbon(draft.category,draft.values);
+  if(est&&est.ok)pub.carbon_est={ver:est.ver,mat:est.mat,elec:est.elec,gas:est.gas,total:est.total,partial:est.partial};
   defs.forEach(function(f){var dst=(f.a==="AUTHORITY"?priv:pub);
     var x=cleanVal(draft.values[f.c]);if(x!==undefined)dst[f.c]=x;
     if(f.t==="LONG"){var y=cleanVal(draft.values[f.c+"_en"]);if(y!==undefined)dst[f.c+"_en"]=y;}});
@@ -706,6 +731,65 @@ window.publish=function(){
     var m=document.createElement("div");m.className="notice";m.textContent="Kaydedilemedi: "+errTr(e);btn.parentNode.appendChild(m);
   });
 };
+
+/* ---------- Commited carbon pre-calculation (textile, cradle-to-gate) ---------- */
+var EST_VER="CM-TX-1 (2026-10)";
+var FIBER_EF=[ // kg CO2e / kg staple fibre; Forfora et al. 2026, Sustainability 18(8):4070, Ecoinvent 3.10
+  {k:"cotton",re:/pamuk|cotton/i,ef:2.8},
+  {k:"polyester",re:/poly?es[tl]er|poliester|\bpes\b|\bpet\b/i,ef:3.1},
+  {k:"lyocell",re:/lyocell|tencel/i,ef:6.1},
+  {k:"viscose",re:/vis[kc]o[nsz]|viscose|rayon/i,ef:5.9}];
+var EF_ELEC=0.478, EF_GAS=0.202;
+var EST_SRC=[
+  "Forfora N. et al. (2026) A Comparative Life Cycle Assessment of T-Shirt Production… Sustainability 18(8):4070, doi:10.3390/su18084070 — fibre production factors (Ecoinvent 3.10): cotton 2.8, polyester 3.1, viscose 5.9, lyocell 6.1 kg CO2e/kg",
+  "T.C. Enerji ve Tabii Kaynaklar Bakanlığı (2022) Türkiye elektrik tüketim noktası emisyon faktörü — distribution grid 0.478 tCO2e/MWh",
+  "IPCC (2006) Guidelines for National GHG Inventories, Vol. 2 Ch. 2 — natural gas 56,100 kg CO2/TJ (≈0.202 kg CO2/kWh)"];
+function num(x){var n=parseFloat(String(x==null?"":x).replace(",","."));return isFinite(n)?n:null;}
+function estimateCarbon(cat,v){
+  if(cat!=="TEXTILE")return null;
+  var r={ver:EST_VER,ok:false,issues:[],missingFibres:[],mat:null,elec:null,gas:null,total:null,partial:false};
+  var w=num(v.weight_g),rows=(v.fiber_composition||[]).filter(function(x){return x&&(x.fiber||x.pct)});
+  if(!w||w<=0)r.issues.push("est_need_w");
+  if(!rows.length)r.issues.push("est_need_f");
+  var sum=rows.reduce(function(a,x){return a+(num(x.pct)||0)},0);
+  if(rows.length&&Math.abs(sum-100)>1)r.issues.push("est_sum");
+  var waste=num(v.waste_pct);if(waste==null||waste<0||waste>=90)waste=0;
+  var massKg=w?(w/1000)/(1-waste/100):0,mat=0;
+  rows.forEach(function(x){var m=FIBER_EF.filter(function(f){return f.re.test(x.fiber||"")})[0];
+    if(!m){r.missingFibres.push(x.fiber||"?");return;}
+    mat+=(num(x.pct)||0)/100*massKg*m.ef;});
+  if(r.missingFibres.length)r.issues.push("est_nofactor");
+  if(r.issues.length)return r;
+  var ek=num(v.elec_kwh),gk=num(v.gas_kwh);
+  var e=(ek!=null&&ek>=0)?ek*EF_ELEC:null,g=(gk!=null&&gk>=0)?gk*EF_GAS:null;
+  function rnd(x,d){var p=Math.pow(10,d);return Math.round(x*p+1e-9)/p;}
+  r.mat=rnd(mat,3);r.elec=e==null?null:rnd(e,3);r.gas=g==null?null:rnd(g,3);
+  r.partial=(e==null&&g==null);
+  r.total=rnd(mat+(e||0)+(g||0),2);
+  r.ok=true;return r;
+}
+function fmtKg(n){return (Math.round(n*100)/100).toLocaleString(LANG==="en"?"en-GB":"tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function estHtml(r,showSources){
+  if(!r)return "";
+  var h='<h3>'+T("est_t")+' <span class="pill auth">'+T("est_tag")+(r.partial?' · '+T("est_partial"):'')+'</span></h3>';
+  if(!r.ok){
+    h+='<div class="hint">'+T("est_none")+'</div><ul class="hint" style="margin:4px 0 0 18px;padding:0">'
+      +r.issues.map(function(k){return '<li>'+T(k)+(k==="est_nofactor"?': '+esc(r.missingFibres.join(", ")):'')+'</li>'}).join("")+'</ul>';
+    return h;
+  }
+  h+='<div class="row"><span class="k">'+T("est_mat")+'</span><span class="v mono">'+fmtKg(r.mat)+' kgCO₂e</span></div>';
+  if(r.elec!=null)h+='<div class="row"><span class="k">'+T("est_elec")+'</span><span class="v mono">'+fmtKg(r.elec)+' kgCO₂e</span></div>';
+  if(r.gas!=null)h+='<div class="row"><span class="k">'+T("est_gas")+'</span><span class="v mono">'+fmtKg(r.gas)+' kgCO₂e</span></div>';
+  h+='<div class="row"><span class="k"><b>'+T("est_total")+'</b></span><span class="v mono"><b>'+fmtKg(r.total)+' kgCO₂e</b></span></div>';
+  if(r.partial)h+='<div class="hint" style="margin-top:6px">'+T("est_noenergy")+'</div>';
+  h+='<div class="hint" style="margin-top:8px">'+T("est_scope")+' '+T("est_recy")+'</div>'
+    +'<div class="hint" style="margin-top:4px"><b>'+T("est_disc")+'</b></div>';
+  if(showSources)h+='<details style="margin-top:8px"><summary class="hint" style="cursor:pointer">'+T("est_src")+' · '+esc(r.ver||EST_VER)+'</summary><ol class="hint" style="margin:6px 0 0 18px;padding:0">'
+    +EST_SRC.map(function(x){return '<li>'+esc(x)+'</li>'}).join("")+'</ol></details>';
+  return h;
+}
+function paintEst(){var el=document.getElementById("estBox");if(!el||!draft)return;
+  el.innerHTML=estHtml(estimateCarbon(draft.category,draft.values),true)+'<div class="hint" style="margin-top:8px">'+T("est_live")+'</div>';}
 
 /* ---------- file uploads (Firebase Storage) ---------- */
 var uploadsBusy=0;
@@ -846,7 +930,9 @@ function paintPublic(p,id,priv,owner){
   var photos=(v.photos||[]).filter(function(x){return x.url});
   if(photos.length)h+='<div class="gallery">'+photos.map(function(x){return '<a href="'+esc(x.url)+'" target="_blank" rel="noopener"><img src="'+esc(x.url)+'" alt="'+esc(v.product_name||"")+'" loading="lazy"></a>'}).join("")+'</div>';
   h+='<div class="facts">';
-  if(v.carbon)h+=fact(T("f_carbon"),esc(v.carbon)+" kgCO₂e");
+  var ce=v.carbon_est;
+  if(v.carbon)h+=fact(T("f_carbon")+' · '+T("decl_tag"),esc(v.carbon)+" kgCO₂e");
+  else if(ce&&ce.total!=null)h+=fact(T("f_carbon")+' · '+T("est_tag"),"≈ "+fmtKg(ce.total)+" kgCO₂e");
   if(v.recycled_content)h+=fact(T("f_rec"),"%"+esc(v.recycled_content));
   if(v.country_origin)h+=fact(T("f_origin"),esc(v.country_origin));
   if(cat==="ELECTRONICS"&&v.energy_class)h+=fact(T("f_energy"),esc(v.energy_class));
@@ -861,7 +947,14 @@ function paintPublic(p,id,priv,owner){
     +'</div>';
   CATS[cat].sections.forEach(function(s){
     var rows=s.fields.filter(function(f){return ["gtin","lot","serial","photos"].indexOf(f.c)<0&&filled(f,v[f.c])&&!(f.t==="FILES"&&!v[f.c].length);});
-    if(!rows.length)return;
+    if(!rows.length&&!(s.title==="Çevresel performans"&&ce&&ce.total!=null))return;
+    if(s.title==="Çevresel performans"){
+      h+='<div class="pp-sec"><h3>'+SL(s.title)+'</h3>';
+      if(v.carbon)h+='<div class="row"><span class="k">'+T("carbon_t")+' <span class="pill ok">'+T("decl_tag")+'</span></span><span class="v mono">'+esc(v.carbon)+' kgCO₂e</span></div>'
+        +(v.carbon_method?'<div class="row"><span class="k">'+T("method")+'</span><span class="v">'+esc(v.carbon_method)+'</span></div>':'');
+      if(ce&&ce.total!=null)h+='<div class="estpub" style="margin-top:'+(v.carbon?'14':'0')+'px">'+estHtml(Object.assign({ok:true,issues:[]},ce),true)+'</div>';
+      h+='</div>';return;
+    }
     if(s.title==="Sertifikalar"){
       h+='<div class="pp-sec"><h3>'+SL("Sertifikalar")+'</h3><div class="certs">';
       (v.certificates||[]).forEach(function(c){if(!c.type&&!c.number)return;h+='<span class="cert">'+esc(c.type||"Sertifika")+(c.number?' <span class="n">'+esc(c.number)+'</span>':'')+'</span>';});
@@ -943,6 +1036,7 @@ function jsonLd(p,v,url){
   fieldsOf(cat).forEach(function(f){if(f.a!=="PUBLIC"||!filled(f,v[f.c]))return;
     if(["product_name","brand","sku","gtin","lot","serial","certificates","country_origin"].indexOf(f.c)>=0)return;
     if(f.t==="FILES")return;
+    if(f.c==="carbon"){props.push({"@type":"PropertyValue",propertyID:"carbon_declared",name:"Carbon footprint (manufacturer declaration)",value:num(v.carbon),unitText:"kg CO2e per product",description:v.carbon_method||undefined});return;}
     props.push({"@type":"PropertyValue",propertyID:f.c,name:EN_F[f.c]||f.l,value:(f.t==="REP"||f.t==="BOOL")?fmtValLang(f,v[f.c],"en"):(f.t==="LONG"?txtFor(v,f.c,"en"):v[f.c]),unitText:f.u?(EN_U[f.u]||f.u):undefined});});
   return {"@context":{"@vocab":"https://schema.org/","gs1":"https://ref.gs1.org/voc/"},
     "@type":"Product","@id":digitalLink(v)||undefined,name:v.product_name,brand:{"@type":"Brand",name:v.brand},
@@ -952,7 +1046,7 @@ function jsonLd(p,v,url){
     "gs1:certificationInfo":(v.certificates||[]).filter(function(c){return c.type||c.number}).map(function(c){return{"@type":"gs1:CertificationDetails","gs1:certificationStandard":c.type,"gs1:certificationIdentification":c.number}}),
     image:(v.photos||[]).filter(function(x){return x.url}).map(function(x){return x.url}),
     subjectOf:(v.cert_docs||[]).filter(function(x){return x.url}).map(function(x){return{"@type":"DigitalDocument",name:x.name,url:x.url,encodingFormat:x.type}}),
-    additionalProperty:props,url:url,conformsTo:"ESPR (EU) 2024/1781"};
+    additionalProperty:props.concat(v.carbon_est&&v.carbon_est.total!=null?[{"@type":"PropertyValue",propertyID:"carbon_estimate",name:"Carbon footprint (Commited pre-calculation, estimate)",value:v.carbon_est.total,unitText:"kg CO2e per product",description:"Cradle-to-gate estimate ("+v.carbon_est.ver+"); not a verified ISO 14067 footprint"+(v.carbon_est.partial?"; fibre stage only":"")}]:[]),url:url,conformsTo:"ESPR (EU) 2024/1781"};
 }
 function jsonPanel(p,v,url){
   return '<div class="label-panel" id="jsonPanel"><h3>JSON-LD</h3><textarea class="jsonbox" readonly>'+esc(JSON.stringify(jsonLd(p,v,url),null,2))+'</textarea>'
