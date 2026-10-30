@@ -9,6 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <style>
 :root{
   --bg:#F5F7F4; --surface:#FFFFFF; --surface-2:#EEF2ED;
@@ -170,6 +171,25 @@ main{padding-block:22px 64px}
 .tabs{display:flex;gap:6px;margin-top:18px;flex-wrap:wrap}
 .tabs button{font-family:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:6px 14px;cursor:pointer}
 .tabs button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.files{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+.file-row{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:6px 8px;background:var(--bg);font-size:13px}
+.file-row img{width:44px;height:44px;object-fit:cover;border-radius:6px;flex:0 0 auto}
+.file-row .fi{width:44px;height:44px;border-radius:6px;display:grid;place-items:center;background:var(--surface-2);color:var(--muted);font-family:var(--mono);font-size:11px;font-weight:700;flex:0 0 auto}
+.file-row .fn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-row .rm{flex:0 0 auto;width:30px;height:30px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:var(--radius-sm);cursor:pointer}
+.upl{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--accent);font-weight:600;cursor:pointer}
+.upl input{display:none}
+.upbar{height:4px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:4px}.upbar i{display:block;height:100%;background:var(--accent);width:0}
+.en-twin{margin-top:6px}
+.en-twin .en-lab{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.en-twin .en-lab b{font-family:var(--mono);font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.gallery{display:flex;gap:10px;overflow-x:auto;margin-top:16px;padding-bottom:4px}
+.gallery img{height:180px;max-width:280px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface)}
+.doclist{display:flex;flex-direction:column;gap:6px}
+.doc{display:flex;align-items:center;gap:10px;font-size:13.5px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 10px;background:var(--bg);cursor:pointer;font-family:inherit;text-align:left;width:100%}
+.doc:hover{border-color:var(--accent)}
+.doc .fi{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--danger);border:1px solid currentColor;border-radius:4px;padding:1px 4px}
+.dpp-label .lp{flex:0 0 auto;width:22mm;height:22mm;object-fit:cover;border-radius:2mm}
 .jsonbox{width:100%;min-height:220px;font-family:var(--mono);font-size:12px;padding:10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--fg)}
 @media print{
   @page{margin:8mm}
@@ -204,6 +224,7 @@ var COMMON=[
    {c:"gtin",l:"GTIN (barkod)",t:"TEXT",a:"PUBLIC",note:"GS1 Türkiye'den alınan 8, 12, 13 veya 14 haneli numara — kontrol hanesi doğrulanır"},
    {c:"lot",l:"Parti / lot no",t:"TEXT",a:"PUBLIC",note:"Parti düzeyinde pasaport için (GS1 AI 10)"},
    {c:"serial",l:"Seri no",t:"TEXT",a:"PUBLIC",note:"Tekil ürün düzeyinde pasaport için (GS1 AI 21)"},
+   {c:"photos",l:"Ürün fotoğrafları",t:"FILES",kind:"image",max:3,a:"PUBLIC",note:"En fazla 3 fotoğraf · JPG, PNG veya WebP · dosya başına 10 MB"},
    {c:"weight_g",l:"Ağırlık",t:"NUMBER",u:"g",a:"PUBLIC"},
    {c:"color",l:"Renk",t:"TEXT",a:"PUBLIC"}]},
  {title:"Menşe",fields:[
@@ -217,7 +238,10 @@ var TAIL=[
    {c:"care",l:"Bakım talimatları",t:"LONG",r:1,a:"PUBLIC"},
    {c:"end_of_life",l:"Geri dönüşüm / bertaraf",t:"LONG",r:1,a:"PUBLIC"}]},
  {title:"Sertifikalar",fields:[
-   {c:"certificates",l:"Sertifikalar",t:"REP",a:"PUBLIC",sub:[{c:"type",l:"Tür (ör. GOTS)"},{c:"number",l:"No"}]}]}
+   {c:"certificates",l:"Sertifikalar",t:"REP",a:"PUBLIC",sub:[{c:"type",l:"Tür (ör. GOTS)"},{c:"number",l:"No"}]},
+   {c:"cert_docs",l:"Sertifika belgeleri",t:"FILES",kind:"pdf",max:10,a:"PUBLIC",note:"Sertifikaların PDF kopyaları · herkese açık"}]},
+ {title:"Teknik dosya",fields:[
+   {c:"tech_docs",l:"Teknik belgeler",t:"FILES",kind:"pdf",max:10,a:"AUTHORITY",note:"Test raporları, REACH/SVHC beyanları, uygunluk beyanı · yalnızca siz ve yetkililer görür"}]}
 ];
 var TEXTILE=[
  {title:"Malzeme",fields:[
@@ -271,7 +295,7 @@ firebase.initializeApp({
   messagingSenderId:"284797252392",
   appId:"1:284797252392:web:e195af964fc981c5d6d61d"
 });
-var auth=firebase.auth(), fs=firebase.firestore();
+var auth=firebase.auth(), fs=firebase.firestore(), st=firebase.storage();
 var ADMIN_EMAIL="commitedapp@gmail.com"; // bildirimlerin gittigi adres
 var ADMIN_EMAILS=["commitedapp@gmail.com","levent.koseoglu@commited.app"]; // admin paneline girebilenler
 function isAdminEmail(){return !!(me&&me.email&&ADMIN_EMAILS.indexOf(me.email.toLowerCase())>=0);}
@@ -289,7 +313,7 @@ var EXAMPLE={id:"ornek-havlu",category:"TEXTILE",example:true,values:{
   priv:{facility:"Örnek Tekstil A.Ş., Denizli",azo_free:true,tier1_processes:"İplik, dokuma, boyama, konfeksiyon",tier1_suppliers:[{name:"Örnek İplik Ltd."}]}};
 
 /* ---------- i18n (TR / EN) ---------- */
-var EN_F={product_name:"Product name",brand:"Brand",sku:"Model / SKU",gtin:"GTIN (barcode)",lot:"Batch / lot no",serial:"Serial no",weight_g:"Weight",color:"Colour",
+var EN_F={product_name:"Product name",brand:"Brand",sku:"Model / SKU",photos:"Product photos",cert_docs:"Certificate documents",tech_docs:"Technical documents",gtin:"GTIN (barcode)",lot:"Batch / lot no",serial:"Serial no",weight_g:"Weight",color:"Colour",
  country_origin:"Country of origin",facility:"Manufacturing facility",carbon:"Carbon footprint",
  care:"Care instructions",end_of_life:"Recycling / disposal",certificates:"Certificates",
  fiber_composition:"Fibre composition",recycled_content:"Recycled content",fabric_weight:"Fabric weight",
@@ -304,8 +328,8 @@ var EN_S={"Kimlik":"Identity","Menşe":"Origin","Çevresel performans":"Environm
  "Kullanım ve yaşam sonu":"Use and end of life","Sertifikalar":"Certificates","Malzeme":"Materials",
  "Kimyasal güvenlik":"Chemical safety","Tedarik zinciri":"Supply chain","Dayanıklılık":"Durability",
  "Madde uyumu":"Substance compliance","Enerji":"Energy","Dayanıklılık ve onarım":"Durability and repair",
- "Güvenlik ve batarya":"Safety and battery","Yaşam sonu":"End of life"};
-var EN_N={"Commited karbon motoru ile hesaplanır":"Calculated with the Commited carbon engine","ör. boyama, dikim":"e.g. dyeing, sewing",
+ "Güvenlik ve batarya":"Safety and battery","Yaşam sonu":"End of life","Teknik dosya":"Technical file"};
+var EN_N={"En fazla 3 fotoğraf · JPG, PNG veya WebP · dosya başına 10 MB":"Up to 3 photos · JPG, PNG or WebP · 10 MB per file","Sertifikaların PDF kopyaları · herkese açık":"PDF copies of certificates · public","Test raporları, REACH/SVHC beyanları, uygunluk beyanı · yalnızca siz ve yetkililer görür":"Test reports, REACH/SVHC declarations, declaration of conformity · visible only to you and authorities","Commited karbon motoru ile hesaplanır":"Calculated with the Commited carbon engine","ör. boyama, dikim":"e.g. dyeing, sewing",
  "GS1 Türkiye'den alınan 8, 12, 13 veya 14 haneli numara — kontrol hanesi doğrulanır":"8, 12, 13 or 14-digit number from GS1 — check digit is validated",
  "Parti düzeyinde pasaport için (GS1 AI 10)":"For batch-level passports (GS1 AI 10)","Tekil ürün düzeyinde pasaport için (GS1 AI 21)":"For item-level passports (GS1 AI 21)"};
 var EN_SUB={"Tür (ör. GOTS)":"Type (e.g. GOTS)","Lif":"Fibre","Malzeme":"Material","Tedarikçi":"Supplier"};
@@ -320,7 +344,8 @@ var UI={
   qr_dl:"QR indir",edit:"Düzenle",
   auth_note:"Üretim tesisi, tedarikçiler ve kimyasal madde notları gibi otorite alanları yalnızca yetkili kişilere açıktır.",
   foot:"Bu pasaport ESPR (AB 2024/1781) veri yapısına göre hazırlanmıştır.",
-  lang_note:"Girilen değerler (ör. bakım talimatı) yazıldığı dilde gösterilir.",
+  lang_note:"Girilen değerler (ör. bakım talimatı) yazıldığı dilde gösterilir.",lang_note_en:"Bazı açıklamaların İngilizce karşılığı girilmemiş; bunlar yazıldığı dilde gösterilir.",
+  add_photo:"+ Fotoğraf ekle",add_pdf:"+ PDF ekle",uploading:"Yükleniyor…",too_big:"Dosya 10 MB'dan büyük",bad_type:"Bu dosya türü desteklenmiyor",max_files:"En fazla dosya sayısına ulaşıldı",up_fail:"Yükleme başarısız",view:"Görüntüle",en_twin:"İngilizce karşılığı",en_twin_hint:"İsteğe bağlı · pasaport İngilizce açıldığında bu metin gösterilir",docs:"Belgeler",wait_up:"Yüklemeler bitene kadar bekleyin",qr_lang:"QR dili",
   ids:"Tanımlayıcılar",dl:"GS1 Digital Link",gran:"Pasaport düzeyi",g_model:"Model",g_batch:"Parti",g_item:"Tekil ürün",
   label_btn:"QR etiketi",label_t:"Ürün etiketi",print:"Yazdır / PDF",
   label_hint:"Gerçek boyutta yazdırılır (tarayıcıda ölçek %100). QR'ın ürün, ambalaj veya eşlik eden belgede bulunması gerekir.",
@@ -335,7 +360,8 @@ var UI={
   qr_dl:"Download QR",edit:"Edit",
   auth_note:"Authority fields such as the manufacturing facility, suppliers and chemical substance notes are only available to authorised parties.",
   foot:"This passport follows the ESPR (EU 2024/1781) data structure.",
-  lang_note:"Entered values (e.g. care instructions) are shown in the language they were written in.",
+  lang_note:"Entered values (e.g. care instructions) are shown in the language they were written in.",lang_note_en:"Some descriptions have no English version yet and are shown in the original language.",
+  add_photo:"+ Add photo",add_pdf:"+ Add PDF",uploading:"Uploading…",too_big:"File is larger than 10 MB",bad_type:"This file type is not supported",max_files:"Maximum number of files reached",up_fail:"Upload failed",view:"View",en_twin:"English version",en_twin_hint:"Optional · shown when the passport is opened in English",docs:"Documents",wait_up:"Please wait for uploads to finish",qr_lang:"QR language",
   ids:"Identifiers",dl:"GS1 Digital Link",gran:"Passport level",g_model:"Model",g_batch:"Batch",g_item:"Item",
   label_btn:"QR label",label_t:"Product label",print:"Print / PDF",
   label_hint:"Prints at actual size (set browser scale to 100%). The QR must be on the product, its packaging or accompanying documents.",
@@ -367,7 +393,8 @@ function digitalLink(v){if(!v.gtin||!gtinValid(v.gtin))return null;
   return "https://id.gs1.org/01/"+gtin14(v.gtin)+(v.lot?"/10/"+encodeURIComponent(v.lot):"")+(v.serial?"/21/"+encodeURIComponent(v.serial):"");}
 function hri(v){if(!v.gtin||!gtinValid(v.gtin))return "";return "(01) "+gtin14(v.gtin)+(v.lot?" (10) "+v.lot:"")+(v.serial?" (21) "+v.serial:"");}
 function granularity(v){return v.serial?"g_item":(v.lot?"g_batch":"g_model");}
-function passportUrl(v,id){var q="";if(v.gtin&&gtinValid(v.gtin)){q="?01="+gtin14(v.gtin)+(v.lot?"&10="+encodeURIComponent(v.lot):"")+(v.serial?"&21="+encodeURIComponent(v.serial):"");}
+function passportUrl(v,id,lang){var q="";if(v.gtin&&gtinValid(v.gtin)){q="?01="+gtin14(v.gtin)+(v.lot?"&10="+encodeURIComponent(v.lot):"")+(v.serial?"&21="+encodeURIComponent(v.serial):"");}
+  if(lang==="en"||lang==="tr"){q+=(q?"&":"?")+"l="+lang;}
   return location.origin+location.pathname+q+"#p/"+id;}
 
 /* ---------- helpers ---------- */
@@ -548,7 +575,7 @@ function renderWizard(editId){
     Promise.all([ref.get(),ref.collection("private").doc("authority").get().catch(function(){return null})]).then(function(r){
       if(!r[0].exists||r[0].data().ownerUid!==me.uid){app.innerHTML='<div class="empty">Bu pasaportu düzenleme yetkiniz yok.</div>';return;}
       var p=r[0].data(),pv=(r[1]&&r[1].exists)?(r[1].data().values||{}):{};
-      draft={id:editId,category:p.category,values:Object.assign({},p.values||{},pv),createdAt:p.createdAt||null};
+      draft={id:editId,pid:editId,category:p.category,values:Object.assign({},p.values||{},pv),createdAt:p.createdAt||null};
       paintWizard();
     }).catch(function(e){app.innerHTML='<div class="notice">Yüklenemedi: '+esc(errTr(e))+'</div>';});
     return;
@@ -556,6 +583,8 @@ function renderWizard(editId){
   draft={id:null,category:null,values:{}};
   try{var d=lsGet(draftKey());if(d){var o=JSON.parse(d);if(o&&!o.id)draft=o;}}catch(e){}
   if(!draft.values)draft.values={};
+  if(!draft.pid)draft.pid=genSlug();
+  saveDraft();
   paintWizard();
 }
 function saveDraft(){if(!draft.id)lsSet(draftKey(),JSON.stringify(draft));}
@@ -597,7 +626,16 @@ function renderField(f,val){
   }else if(f.t==="REP"){
     body='<div id="rep_'+f.c+'">'+repRows(f,val)+'</div><button type="button" class="add-row" onclick="repAdd(\''+f.c+'\')">'+T("add_row")+'</button>';
   }else if(f.t==="LONG"){
-    body='<textarea id="'+id+'" oninput="setVal(\''+f.c+'\',this.value)">'+esc(val||"")+'</textarea>';
+    var ev=draft.values[f.c+"_en"];
+    body='<textarea id="'+id+'" oninput="setVal(\''+f.c+'\',this.value)">'+esc(val||"")+'</textarea>'
+      +'<div class="en-twin"><div class="en-lab"><b>EN</b>'+T("en_twin")+'</div>'
+      +'<textarea id="'+id+'_en" lang="en" oninput="setVal(\''+f.c+'_en\',this.value)">'+esc(ev||"")+'</textarea>'
+      +'<span class="hint">'+T("en_twin_hint")+'</span></div>';
+  }else if(f.t==="FILES"){
+    body='<div class="files" id="files_'+f.c+'">'+fileRows(f,val)+'</div>'
+      +'<label class="upl">'+(f.kind==="image"?T("add_photo"):T("add_pdf"))
+      +'<input type="file" '+(f.kind==="image"?'accept="image/jpeg,image/png,image/webp"':'accept="application/pdf"')+' multiple onchange="pickFiles(\''+f.c+'\',this)"></label>'
+      +'<div id="up_'+f.c+'"></div>';
   }else{
     var typ=f.t==="NUMBER"?"number":(f.t==="URL"?"url":"text");
     body='<input type="'+typ+'" id="'+id+'" value="'+esc(val==null?"":val)+'" oninput="setVal(\''+f.c+'\',this.value)">';
@@ -647,10 +685,13 @@ window.publish=function(){
     var first=document.getElementById("field_"+bad[0].c);if(first)first.scrollIntoView({behavior:"smooth",block:"center"});
     return;
   }
+  if(uploadsBusy>0){alert(T("wait_up"));return;}
   var pub={},priv={};
-  defs.forEach(function(f){var x=cleanVal(draft.values[f.c]);if(x===undefined)return;(f.a==="AUTHORITY"?priv:pub)[f.c]=x;});
+  defs.forEach(function(f){var dst=(f.a==="AUTHORITY"?priv:pub);
+    var x=cleanVal(draft.values[f.c]);if(x!==undefined)dst[f.c]=x;
+    if(f.t==="LONG"){var y=cleanVal(draft.values[f.c+"_en"]);if(y!==undefined)dst[f.c+"_en"]=y;}});
   var btn=document.getElementById("pubBtn");btn.disabled=true;btn.innerHTML='<span class="spin"></span> Kaydediliyor…';
-  var id=draft.id||genSlug(),now=firebase.firestore.FieldValue.serverTimestamp();
+  var id=draft.id||draft.pid||genSlug(),now=firebase.firestore.FieldValue.serverTimestamp();
   var ref=fs.collection("passports").doc(id),b=fs.batch();
   b.set(ref,{ownerUid:me.uid,category:draft.category,values:pub,company:(profile&&profile.company)||"",
     createdAt:draft.createdAt||now,updatedAt:now});
@@ -665,6 +706,51 @@ window.publish=function(){
     var m=document.createElement("div");m.className="notice";m.textContent="Kaydedilemedi: "+errTr(e);btn.parentNode.appendChild(m);
   });
 };
+
+/* ---------- file uploads (Firebase Storage) ---------- */
+var uploadsBusy=0;
+function isPdf(x){return /pdf$/i.test(x.type||"")||/\.pdf$/i.test(x.name||"");}
+function fileRows(f,list){return (list||[]).map(function(x,i){
+  var th=(f.kind==="image"&&x.url)?'<img src="'+esc(x.url)+'" alt="">':'<span class="fi">PDF</span>';
+  return '<div class="file-row">'+th+'<span class="fn">'+esc(x.name||"")+'</span>'
+    +'<button type="button" class="rm" onclick="rmFile(\''+f.c+'\','+i+')" aria-label="'+T("del")+'">×</button></div>';}).join("");}
+function paintFiles(c){var f=fieldDef(draft.category,c),el=document.getElementById("files_"+c);if(el)el.innerHTML=fileRows(f,draft.values[c]);}
+function safeName(n){return String(n||"dosya").normalize("NFKD").replace(/[^\w.\-]+/g,"_").slice(-80);}
+window.pickFiles=function(c,input){
+  var f=fieldDef(draft.category,c),files=[].slice.call(input.files||[]);input.value="";
+  var box=document.getElementById("up_"+c);
+  files.forEach(function(file){
+    var list=draft.values[c]||[];
+    function msg(t){var d=document.createElement("div");d.className="err";d.textContent=file.name+": "+t;box.appendChild(d);setTimeout(function(){d.remove()},6000);}
+    if(list.length>=f.max)return msg(T("max_files"));
+    var okType=f.kind==="image"?/^image\/(jpeg|png|webp)$/.test(file.type):file.type==="application/pdf";
+    if(!okType)return msg(T("bad_type"));
+    if(file.size>=10*1024*1024)return msg(T("too_big"));
+    var vis=f.a==="AUTHORITY"?"private":"public";
+    var path="uploads/"+me.uid+"/"+draft.pid+"/"+vis+"/"+Date.now().toString(36)+"_"+safeName(file.name);
+    var row=document.createElement("div");row.innerHTML='<div class="hint">'+esc(file.name)+' · '+T("uploading")+'</div><div class="upbar"><i></i></div>';box.appendChild(row);
+    uploadsBusy++;
+    var task=st.ref(path).put(file,{contentType:file.type});
+    task.on("state_changed",function(sn){var bar=row.querySelector("i");if(bar)bar.style.width=Math.round(sn.bytesTransferred/sn.totalBytes*100)+"%";},
+      function(e){uploadsBusy--;row.remove();msg(T("up_fail")+" ("+((e&&e.code)||"")+")");},
+      function(){
+        var item={name:file.name,path:path,type:file.type,size:file.size};
+        var p=vis==="public"?task.snapshot.ref.getDownloadURL().then(function(u){item.url=u;}):Promise.resolve();
+        p.then(function(){var l=draft.values[c]||[];l.push(item);draft.values[c]=l;saveDraft();paintFiles(c);updateProgress();})
+         .catch(function(){msg(T("up_fail"));}).then(function(){uploadsBusy--;row.remove();});
+      });
+  });
+};
+window.rmFile=function(c,i){var l=draft.values[c]||[],x=l[i];if(!x)return;
+  l.splice(i,1);draft.values[c]=l;saveDraft();paintFiles(c);
+  // dosya yalnizca kayitli pasaportta kullanilmiyorsa (yeni taslak) hemen silinir; aksi halde kayit sirasinda referans kalkar
+  if(!draft.id&&x.path)st.ref(x.path).delete().catch(function(){});};
+function openPrivate(path){st.ref(path).getDownloadURL().then(function(u){window.open(u,"_blank","noopener");}).catch(function(e){alert(errTr(e));});}
+window.openPrivate=openPrivate;
+function docList(list,priv){return '<div class="doclist">'+(list||[]).map(function(x){
+  var tag=isPdf(x)?'PDF':'IMG';
+  if(priv||!x.url)return '<button type="button" class="doc" onclick="openPrivate(\''+esc(x.path)+'\')"><span class="fi">'+tag+'</span>'+esc(x.name)+'</button>';
+  return '<a class="doc" href="'+esc(x.url)+'" target="_blank" rel="noopener"><span class="fi">'+tag+'</span>'+esc(x.name)+'</a>';}).join("")+'</div>';}
 
 /* ---------- admin notification (picked up by the Firebase "Trigger Email" extension) ---------- */
 function notifyAdmin(id,v,cat){
@@ -739,7 +825,7 @@ function renderPublic(id){
   fs.collection("passports").doc(id).get().then(function(d){
     if(!d.exists){app.innerHTML=head(T("nf_t"),"")+'<div class="empty">'+T("nf")+'</div><a class="back" href="#">‹ '+T("back_home")+'</a>';return;}
     var p=d.data(),owner=!!(me&&p.ownerUid===me.uid);
-    if(!owner)return paintPublic(p,id,null,false);
+    if(!owner&&!(typeof isAdmin==="function"&&isAdmin()))return paintPublic(p,id,null,false);
     d.ref.collection("private").doc("authority").get().then(function(x){paintPublic(p,id,x.exists?(x.data().values||{}):{},true);})
       .catch(function(){paintPublic(p,id,{},true);});
   }).catch(function(e){app.innerHTML='<div class="notice">Yüklenemedi: '+esc(errTr(e))+'</div>';});
@@ -757,6 +843,8 @@ function paintPublic(p,id,priv,owner){
     +(p.company?'<div class="sub">'+T("maker")+': '+esc(p.company)+'</div>':'')
     +'<div style="margin-top:6px">'+(p.example?'<span class="pill auth">'+T("sample")+'</span>':'<span class="pill ok">Commited DPP</span>')+'</div>'
     +'</div><div><div class="qrbox" id="qr"></div><div style="text-align:center;margin-top:6px" class="slug">#'+esc(id)+'</div></div></div>';
+  var photos=(v.photos||[]).filter(function(x){return x.url});
+  if(photos.length)h+='<div class="gallery">'+photos.map(function(x){return '<a href="'+esc(x.url)+'" target="_blank" rel="noopener"><img src="'+esc(x.url)+'" alt="'+esc(v.product_name||"")+'" loading="lazy"></a>'}).join("")+'</div>';
   h+='<div class="facts">';
   if(v.carbon)h+=fact(T("f_carbon"),esc(v.carbon)+" kgCO₂e");
   if(v.recycled_content)h+=fact(T("f_rec"),"%"+esc(v.recycled_content));
@@ -772,15 +860,18 @@ function paintPublic(p,id,priv,owner){
     +(dl?'<div class="row"><span class="k">'+T("dl")+'</span><span class="v mono" style="font-size:12px">'+esc(dl)+'</span></div>':'')
     +'</div>';
   CATS[cat].sections.forEach(function(s){
-    var rows=s.fields.filter(function(f){return f.c!=="gtin"&&f.c!=="lot"&&f.c!=="serial"&&filled(f,v[f.c]);});
+    var rows=s.fields.filter(function(f){return ["gtin","lot","serial","photos"].indexOf(f.c)<0&&filled(f,v[f.c])&&!(f.t==="FILES"&&!v[f.c].length);});
     if(!rows.length)return;
     if(s.title==="Sertifikalar"){
       h+='<div class="pp-sec"><h3>'+SL("Sertifikalar")+'</h3><div class="certs">';
       (v.certificates||[]).forEach(function(c){if(!c.type&&!c.number)return;h+='<span class="cert">'+esc(c.type||"Sertifika")+(c.number?' <span class="n">'+esc(c.number)+'</span>':'')+'</span>';});
-      h+='</div></div>';return;
+      h+='</div>'+((v.cert_docs||[]).length?'<div style="margin-top:12px">'+docList(v.cert_docs,false)+'</div>':'')+'</div>';return;
     }
     h+='<div class="pp-sec"><h3>'+esc(SL(s.title))+'</h3>';
-    rows.forEach(function(f){h+='<div class="row"><span class="k">'+esc(FL(f))+(f.a==="AUTHORITY"?' '+badge("AUTHORITY"):'')+'</span><span class="v">'+esc(fmtVal(f,v[f.c]))+'</span></div>';});
+    rows.forEach(function(f){
+      if(f.t==="FILES"){h+='<div style="margin:6px 0 4px" class="k">'+esc(FL(f))+(f.a==="AUTHORITY"?' '+badge("AUTHORITY"):'')+'</div>'+docList(v[f.c],f.a==="AUTHORITY");return;}
+      var val=f.t==="LONG"?txtFor(v,f.c,LANG):fmtVal(f,v[f.c]);
+      h+='<div class="row"><span class="k">'+esc(FL(f))+(f.a==="AUTHORITY"?' '+badge("AUTHORITY"):'')+'</span><span class="v">'+esc(val)+'</span></div>';});
     h+='</div>';
   });
   h+='<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">';
@@ -793,7 +884,8 @@ function paintPublic(p,id,priv,owner){
   if(showLabel)h+=labelPanel(v,url);
   if(showJson)h+=jsonPanel(p,v,url);
   if(!priv)h+='<div class="notice">'+T("auth_note")+'</div>';
-  h+='<div class="foot-note">'+T("foot")+(LANG==="en"?'<br>'+T("lang_note"):'')+'<br>Powered by <b>Commited</b> · '+T("dpp")+'</div>';
+  var missingEn=fieldsOf(cat).some(function(f){return f.t==="LONG"&&v[f.c]&&!v[f.c+"_en"];});
+  h+='<div class="foot-note">'+T("foot")+(LANG==="en"&&missingEn?'<br>'+T("lang_note_en"):'')+'<br>Powered by <b>Commited</b> · '+T("dpp")+'</div>';
   app.innerHTML=h;
   document.getElementById("copyBtn").onclick=function(){
     var b=this;try{navigator.clipboard.writeText(url).then(function(){b.textContent=T("copied");setTimeout(function(){b.textContent=T("copy")},1500)},function(){prompt("Bağlantı:",url)})}catch(e){prompt("Bağlantı:",url)}
@@ -805,7 +897,7 @@ function paintPublic(p,id,priv,owner){
     var src=c?c.toDataURL("image/png"):(img?img.src:null);if(!src)return;
     var a=document.createElement("a");a.href=src;a.download="pasaport-"+id+".png";document.body.appendChild(a);a.click();a.remove();
   };
-  if(showLabel)drawLabelQR(url);
+  if(showLabel){var ll=labelLang||LANG;drawLabelQR(passportUrl(p.values||{},id,ll==="both"?null:ll));}
 }
 window.toggleAuth=function(){showAuth=!showAuth;route();};
 function repaintPublic(){if(lastPub)paintPublic.apply(null,lastPub);}
@@ -822,8 +914,10 @@ function labelPanel(v,url){
   [["s50","50 × 30 mm"],["s70","70 × 40 mm"],["s100","100 × 60 mm"]].forEach(function(z){h+='<button class="'+(labelSize===z[0]?"on":"")+'" onclick="setLabelSize(\''+z[0]+'\')">'+z[1]+'</button>';});
   h+='<span style="flex:1"></span>';
   [["tr","TR"],["en","EN"],["both","TR + EN"]].forEach(function(z){h+='<button class="'+(ll===z[0]?"on":"")+'" onclick="setLabelLang(\''+z[0]+'\')">'+z[1]+'</button>';});
-  h+='</div><div class="label-stage"><div id="printArea"><div class="dpp-label '+labelSize+'">'
-    +'<div class="lq" id="labelQR"></div><div class="lt">'
+  var ph=(v.photos||[]).filter(function(x){return x.url})[0];
+  h+='</div><div class="hint" style="margin:-6px 0 12px">'+T("qr_lang")+': '+(ll==="both"?"TR + EN — "+(LANG==="en"?"follows the phone language":"telefonun diline göre açılır"):(ll==="en"?"EN — "+(LANG==="en"?"always opens in English":"her zaman İngilizce açılır"):"TR — "+(LANG==="en"?"always opens in Turkish":"her zaman Türkçe açılır")))+'</div>'
+    +'<div class="label-stage"><div id="printArea"><div class="dpp-label '+labelSize+'">'
+    +'<div class="lq" id="labelQR"></div>'+(labelSize==="s100"&&ph?'<img class="lp" src="'+esc(ph.url)+'" alt="">':'')+'<div class="lt">'
     +'<span class="l-ey">'+lbl("dpp",ll)+'</span>'
     +'<span class="l-nm">'+esc(v.product_name||"")+'</span>'
     +'<span class="l-br">'+esc(v.brand||"")+(v.sku?' · '+esc(v.sku):'')+'</span>'
@@ -848,13 +942,16 @@ function jsonLd(p,v,url){
   var cat=p.category,props=[];
   fieldsOf(cat).forEach(function(f){if(f.a!=="PUBLIC"||!filled(f,v[f.c]))return;
     if(["product_name","brand","sku","gtin","lot","serial","certificates","country_origin"].indexOf(f.c)>=0)return;
-    props.push({"@type":"PropertyValue",propertyID:f.c,name:EN_F[f.c]||f.l,value:(f.t==="REP"||f.t==="BOOL")?fmtValLang(f,v[f.c],"en"):v[f.c],unitText:f.u?(EN_U[f.u]||f.u):undefined});});
+    if(f.t==="FILES")return;
+    props.push({"@type":"PropertyValue",propertyID:f.c,name:EN_F[f.c]||f.l,value:(f.t==="REP"||f.t==="BOOL")?fmtValLang(f,v[f.c],"en"):(f.t==="LONG"?txtFor(v,f.c,"en"):v[f.c]),unitText:f.u?(EN_U[f.u]||f.u):undefined});});
   return {"@context":{"@vocab":"https://schema.org/","gs1":"https://ref.gs1.org/voc/"},
     "@type":"Product","@id":digitalLink(v)||undefined,name:v.product_name,brand:{"@type":"Brand",name:v.brand},
     manufacturer:p.company?{"@type":"Organization",name:p.company}:undefined,
     model:v.sku,gtin:v.gtin&&gtinValid(v.gtin)?gtin14(v.gtin):undefined,"gs1:batchNumber":v.lot||undefined,"gs1:serialNumber":v.serial||undefined,
     countryOfOrigin:v.country_origin,category:cat,
     "gs1:certificationInfo":(v.certificates||[]).filter(function(c){return c.type||c.number}).map(function(c){return{"@type":"gs1:CertificationDetails","gs1:certificationStandard":c.type,"gs1:certificationIdentification":c.number}}),
+    image:(v.photos||[]).filter(function(x){return x.url}).map(function(x){return x.url}),
+    subjectOf:(v.cert_docs||[]).filter(function(x){return x.url}).map(function(x){return{"@type":"DigitalDocument",name:x.name,url:x.url,encodingFormat:x.type}}),
     additionalProperty:props,url:url,conformsTo:"ESPR (EU) 2024/1781"};
 }
 function jsonPanel(p,v,url){
@@ -873,11 +970,14 @@ window.dlJson=function(){var t=document.querySelector("#jsonPanel textarea");if(
 window.delP=function(id){
   if(!confirm("Bu pasaport kalıcı olarak silinsin mi? QR kodu artık çalışmaz."))return;
   var ref=fs.collection("passports").doc(id);
+  try{var all=[].concat((curP&&curP.values&&curP.values.photos)||[],(curP&&curP.values&&curP.values.cert_docs)||[],((lastPub&&lastPub[2])||{}).tech_docs||[]);
+    all.forEach(function(x){if(x.path)st.ref(x.path).delete().catch(function(){});});}catch(e){}
   ref.collection("private").doc("authority").delete().catch(function(){}).then(function(){return ref.delete();})
     .then(function(){location.hash="";}).catch(function(e){alert("Silinemedi: "+errTr(e));});
 };
 function fact(k,v){return '<div class="fact"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';}
 function fmtVal(f,v){return fmtValLang(f,v,LANG);}
+function txtFor(v,c,lang){return (lang==="en"&&v[c+"_en"])?v[c+"_en"]:v[c];}
 function fmtValLang(f,v,lang){
   if(f.t==="BOOL")return v?TL("yes",lang):TL("no",lang);
   if(f.t==="REP"){
