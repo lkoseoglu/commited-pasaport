@@ -4,8 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Commited Pasaport — Dijital Ürün Pasaportu</title>
-<meta name="description" content="Commited Dijital Ürün Pasaportu (ESPR, AB 2024/1781) — ürün verisi girin, QR kodlu pasaport oluşturun.">
+<meta name="description" content="Commited Dijital Ürün Pasaportu (ESPR, AB 2024/1781) — üretici paneli, QR kodlu ürün pasaportları.">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 :root{
   --bg:#F5F7F4; --surface:#FFFFFF; --surface-2:#EEF2ED;
@@ -121,6 +124,21 @@ main{padding-block:22px 64px}
 .foot-note{margin-top:22px;color:var(--muted);font-size:12px;text-align:center;line-height:1.6}
 .back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;text-decoration:none;margin-bottom:8px;font-weight:600}
 @media (max-width:480px){.chooser{grid-template-columns:1fr}.page-h{font-size:21px}}
+
+.field input[type=email],.field input[type=password],.search{font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--fg);width:100%}
+.field input[type=email]:focus,.field input[type=password]:focus,.search:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.search{flex:1;min-width:180px;max-width:340px}
+.auth-wrap{max-width:440px;margin:10px auto 0}
+.auth-side{max-width:440px;margin:18px auto 0;font-size:13.5px}
+.form-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:6px}
+.lnk{font-size:13px;color:var(--muted)}
+.err:not([hidden]){display:block;margin:4px 0 10px}
+.userbar{display:flex;align-items:center;gap:10px}
+.userbar .who{font-size:13px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-3px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition:none!important}}
+@media (max-width:480px){.userbar .who{display:none}}
 </style>
 </head>
 <body>
@@ -130,10 +148,10 @@ main{padding-block:22px 64px}
     <span>Commited Pasaport<small>Dijital Ürün Pasaportu</small></span>
   </div>
   <span class="spacer"></span>
+  <div class="userbar" id="userbar"></div>
   <button class="theme-btn" id="themeBtn" title="Tema" aria-label="Tema değiştir">◐</button>
 </div></div>
-<main><div class="wrap" id="app"></div></main>
-
+<main><div class="wrap" id="app"><div style="padding:60px 0;text-align:center;color:var(--muted)">Yükleniyor…</div></div></main>
 <script>
 "use strict";
 /* ---------- field schema (common + category) ---------- */
@@ -199,20 +217,33 @@ var CATS={
 function fieldsOf(cat){var o=[];CATS[cat].sections.forEach(function(s){s.fields.forEach(function(f){o.push(f)})});return o;}
 function fieldDef(cat,code){return fieldsOf(cat).filter(function(f){return f.c===code})[0];}
 
-/* ---------- example passport (clearly labeled sample data) ---------- */
-var EXAMPLE={slug:"ornek-havlu",category:"TEXTILE",example:true,createdAt:0,values:{
+
+/* ---------- Firebase ---------- */
+firebase.initializeApp({
+  apiKey:"AIzaSyBUxRVSikIELdJuOA6SKJd8I_mGttaTGWQ",
+  authDomain:"commited-pasaport.firebaseapp.com",
+  projectId:"commited-pasaport",
+  storageBucket:"commited-pasaport.firebasestorage.app",
+  messagingSenderId:"284797252392",
+  appId:"1:284797252392:web:e195af964fc981c5d6d61d"
+});
+var auth=firebase.auth(), fs=firebase.firestore();
+var me=null, profile=null, authReady=false;
+
+/* ---------- example passport (sample data, static) ---------- */
+var EXAMPLE={id:"ornek-havlu",category:"TEXTILE",example:true,values:{
   product_name:"Örnek Pamuklu Havlu 50×90",brand:"Örnek Marka",sku:"DEMO-HVL-5090",weight_g:"280",color:"Doğal beyaz",
-  country_origin:"Türkiye",facility:"Örnek Tekstil A.Ş., Denizli",carbon:"2.4",
+  country_origin:"Türkiye",carbon:"2.4",
   fiber_composition:[{fiber:"Organik pamuk",pct:"80"},{fiber:"Geri dönüştürülmüş pamuk",pct:"20"}],
-  recycled_content:"20",fabric_weight:"500",reach:true,azo_free:true,
-  tier1_processes:"İplik, dokuma, boyama, konfeksiyon",tier1_suppliers:[{name:"Örnek İplik Ltd."}],
+  recycled_content:"20",fabric_weight:"500",reach:true,
   durability:"60°C'de 200 yıkamaya dayanıklı",care:"60°C'de yıkayın, ağartıcı kullanmayın",
-  end_of_life:"Tekstil geri dönüşüm kutusuna atınız",certificates:[{type:"GOTS",number:"DEMO-0001"}]}};
+  end_of_life:"Tekstil geri dönüşüm kutusuna atınız",certificates:[{type:"GOTS",number:"DEMO-0001"}]},
+  priv:{facility:"Örnek Tekstil A.Ş., Denizli",azo_free:true,tier1_processes:"İplik, dokuma, boyama, konfeksiyon",tier1_suppliers:[{name:"Örnek İplik Ltd."}]}};
 
 /* ---------- helpers ---------- */
 var app=document.getElementById("app");
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
-function genSlug(){var s="",a="abcdefghijkmnpqrstuvwxyz23456789";for(var i=0;i<8;i++)s+=a[Math.floor(Math.random()*a.length)];return s;}
+function genSlug(){var s="",a="abcdefghijkmnpqrstuvwxyz23456789";for(var i=0;i<10;i++)s+=a[Math.floor(Math.random()*a.length)];return s;}
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function lsDel(k){try{localStorage.removeItem(k)}catch(e){}}
@@ -221,75 +252,192 @@ document.getElementById("themeBtn").onclick=function(){
   var dark=document.documentElement.getAttribute("data-theme")==="dark";
   var t=dark?"light":"dark";document.documentElement.setAttribute("data-theme",t);lsSet("dpp-theme",t);
 };
-/* passport <-> URL token (so a QR opens on any device, no server needed) */
-function encodeP(p){
-  var json=JSON.stringify({c:p.category,v:p.values,x:p.example?1:0});
-  var b=btoa(unescape(encodeURIComponent(json)));
-  return b.replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+function loading(msg){app.innerHTML='<div style="padding:60px 0;text-align:center;color:var(--muted)"><span class="spin"></span> '+esc(msg||"Yükleniyor…")+'</div>';}
+function head(title,sub){return '<span class="eyebrow">Commited · DPP</span><h1 class="page-h">'+esc(title)+'</h1>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'');}
+function errTr(e){
+  var c=(e&&e.code)||"";
+  var m={"auth/invalid-email":"Geçersiz e-posta adresi.","auth/email-already-in-use":"Bu e-posta ile zaten bir hesap var. Giriş yapın.",
+    "auth/weak-password":"Şifre en az 6 karakter olmalı.","auth/invalid-credential":"Kullanıcı adı/e-posta veya şifre hatalı.",
+    "auth/wrong-password":"Kullanıcı adı/e-posta veya şifre hatalı.","auth/user-not-found":"Kullanıcı adı/e-posta veya şifre hatalı.",
+    "auth/too-many-requests":"Çok fazla deneme yapıldı. Lütfen biraz sonra tekrar deneyin.","auth/network-request-failed":"Bağlantı hatası. İnternetinizi kontrol edin.",
+    "permission-denied":"Bu işlem için yetkiniz yok."};
+  return m[c]||("Bir hata oluştu"+(c?" ("+c+")":"")+".");
 }
-function decodeP(tok){
-  try{var b=tok.replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";
-    var o=JSON.parse(decodeURIComponent(escape(atob(b))));
-    if(!o||!CATS[o.c])return null;
-    return {category:o.c,values:o.v||{},example:!!o.x};
-  }catch(e){return null}
+function userbar(){
+  var el=document.getElementById("userbar");
+  if(!me){el.innerHTML="";return;}
+  el.innerHTML='<span class="who">'+esc((profile&&profile.username)||me.email)+'</span><button class="btn sm" id="logoutBtn">Çıkış</button>';
+  document.getElementById("logoutBtn").onclick=function(){auth.signOut().then(function(){location.hash="";});};
 }
 
-/* ---------- local store (this browser) ---------- */
-function loadAll(){var o={};try{o=JSON.parse(lsGet("dpp-passports")||"{}")||{}}catch(e){o={}}return o;}
-function saveAll(o){lsSet("dpp-passports",JSON.stringify(o));}
+/* ---------- auth state ---------- */
+auth.onAuthStateChanged(function(u){
+  me=u;profile=null;
+  if(!u){authReady=true;userbar();route();return;}
+  fs.collection("users").doc(u.uid).get().then(function(d){profile=d.exists?d.data():null;})
+    .catch(function(){}).then(function(){authReady=true;userbar();route();});
+});
 
 /* ---------- router ---------- */
 window.addEventListener("hashchange",route);
 function route(){
   var h=(location.hash||"").replace(/^#/,"");
   window.scrollTo(0,0);
-  if(h==="new")return renderWizard();
-  if(h.indexOf("v/")===0){var p=decodeP(h.slice(2));return p?paintPublic(p,null):notFound();}
-  if(h.indexOf("p/")===0){var id=h.slice(2);var all=loadAll();
-    if(id===EXAMPLE.slug)return paintPublic(EXAMPLE,id);
-    return all[id]?paintPublic(all[id],id):notFound();}
+  if(h.indexOf("p/")===0)return renderPublic(h.slice(2));
+  if(!authReady)return loading();
+  if(!me){return h==="kayit"?renderRegister():(h==="sifre"?renderReset():renderLogin());}
+  if(h==="new")return renderWizard(null);
+  if(h.indexOf("edit/")===0)return renderWizard(h.slice(5));
   return renderPortal();
 }
-function notFound(){app.innerHTML=head("Pasaport bulunamadı","")+'<div class="empty">Bu bağlantıya ait pasaport bulunamadı.</div><a class="back" href="#">‹ Panele dön</a>';}
 
-/* ---------- portal ---------- */
+/* ---------- login / register / reset ---------- */
+function authShell(inner){
+  return '<div class="auth-wrap">'+inner+'</div>'
+   +'<div class="auth-side"><a href="#p/ornek-havlu">Örnek bir pasaportu inceleyin ›</a></div>';
+}
+function renderLogin(){
+  app.innerHTML=authShell(head("Üretici girişi","Ürünlerinize ve pasaportlarınıza erişmek için giriş yapın.")
+   +'<form class="section" id="loginForm" novalidate>'
+   +'<div class="field"><label for="li_id">Kullanıcı adı veya e-posta</label><input type="text" id="li_id" autocomplete="username" required></div>'
+   +'<div class="field"><label for="li_pw">Şifre</label><input type="password" id="li_pw" autocomplete="current-password" required></div>'
+   +'<div class="err" id="li_err" hidden></div>'
+   +'<div class="form-actions"><button class="btn primary" type="submit" id="li_btn">Giriş yap</button><a href="#sifre" class="lnk">Şifremi unuttum</a></div>'
+   +'</form>'
+   +'<p class="sub" style="margin-top:14px">Hesabınız yok mu? <a href="#kayit"><b>Ücretsiz kayıt olun</b></a></p>');
+  document.getElementById("loginForm").onsubmit=function(ev){
+    ev.preventDefault();
+    var id=document.getElementById("li_id").value.trim(),pw=document.getElementById("li_pw").value;
+    var er=document.getElementById("li_err"),btn=document.getElementById("li_btn");
+    er.hidden=true;if(!id||!pw){er.textContent="Lütfen tüm alanları doldurun.";er.hidden=false;return;}
+    btn.disabled=true;btn.innerHTML='<span class="spin"></span> Giriş yapılıyor…';
+    var emailP=id.indexOf("@")>=0?Promise.resolve(id):fs.collection("usernames").doc(id.toLowerCase()).get().then(function(d){
+      if(!d.exists)throw {code:"auth/invalid-credential"};return d.data().email;});
+    emailP.then(function(email){return auth.signInWithEmailAndPassword(email,pw);})
+      .then(function(){location.hash="";})
+      .catch(function(e){er.textContent=errTr(e);er.hidden=false;btn.disabled=false;btn.textContent="Giriş yap";});
+  };
+}
+function renderRegister(){
+  app.innerHTML=authShell(head("Üretici kaydı","Hesap oluşturun, ürünleriniz için dijital pasaport yayınlayın.")
+   +'<form class="section" id="regForm" novalidate>'
+   +'<div class="field"><label for="rg_co">Firma adı <span class="req">*</span></label><input type="text" id="rg_co" autocomplete="organization"></div>'
+   +'<div class="field"><label for="rg_un">Kullanıcı adı <span class="req">*</span></label><input type="text" id="rg_un" autocomplete="username"><span class="hint">3–30 karakter; küçük harf, rakam, nokta, tire veya alt çizgi</span></div>'
+   +'<div class="field"><label for="rg_em">E-posta <span class="req">*</span></label><input type="email" id="rg_em" autocomplete="email"><span class="hint">Şifre sıfırlama için kullanılır</span></div>'
+   +'<div class="field"><label for="rg_pw">Şifre <span class="req">*</span></label><input type="password" id="rg_pw" autocomplete="new-password"><span class="hint">En az 8 karakter</span></div>'
+   +'<div class="field"><label for="rg_pw2">Şifre (tekrar) <span class="req">*</span></label><input type="password" id="rg_pw2" autocomplete="new-password"></div>'
+   +'<label class="check" style="margin:4px 0 12px"><input type="checkbox" id="rg_kvkk"> <span><a href="https://www.commitedevents.app/aydinlatma-metni" target="_blank" rel="noopener">Aydınlatma Metni</a>\'ni okudum.</span></label>'
+   +'<div class="err" id="rg_err" hidden></div>'
+   +'<div class="form-actions"><button class="btn primary" type="submit" id="rg_btn">Kayıt ol</button></div>'
+   +'</form>'
+   +'<p class="sub" style="margin-top:14px">Zaten hesabınız var mı? <a href="#"><b>Giriş yapın</b></a></p>');
+  document.getElementById("regForm").onsubmit=function(ev){
+    ev.preventDefault();
+    var co=val("rg_co"),un=val("rg_un").toLowerCase(),em=val("rg_em"),pw=document.getElementById("rg_pw").value,pw2=document.getElementById("rg_pw2").value;
+    var er=document.getElementById("rg_err"),btn=document.getElementById("rg_btn");
+    function fail(m){er.textContent=m;er.hidden=false;btn.disabled=false;btn.textContent="Kayıt ol";}
+    er.hidden=true;
+    if(!co||!un||!em||!pw)return fail("Lütfen zorunlu alanları doldurun.");
+    if(!/^[a-z0-9._-]{3,30}$/.test(un))return fail("Kullanıcı adı 3–30 karakter olmalı; yalnızca küçük harf, rakam, nokta, tire, alt çizgi.");
+    if(pw.length<8)return fail("Şifre en az 8 karakter olmalı.");
+    if(pw!==pw2)return fail("Şifreler eşleşmiyor.");
+    if(!document.getElementById("rg_kvkk").checked)return fail("Devam etmek için Aydınlatma Metni'ni onaylayın.");
+    btn.disabled=true;btn.innerHTML='<span class="spin"></span> Hesap oluşturuluyor…';
+    fs.collection("usernames").doc(un).get().then(function(d){
+      if(d.exists)throw {code:"x/username-taken"};
+      return auth.createUserWithEmailAndPassword(em,pw);
+    }).then(function(cred){
+      var uid=cred.user.uid,b=fs.batch();
+      b.set(fs.collection("usernames").doc(un),{uid:uid,email:em});
+      b.set(fs.collection("users").doc(uid),{username:un,company:co,email:em,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+      return b.commit().then(function(){profile={username:un,company:co,email:em};userbar();location.hash="";route();});
+    }).catch(function(e){
+      if(e&&e.code==="x/username-taken")return fail("Bu kullanıcı adı alınmış, başka bir tane deneyin.");
+      fail(errTr(e));
+    });
+  };
+}
+function val(id){return document.getElementById(id).value.trim();}
+function renderReset(){
+  app.innerHTML=authShell(head("Şifre sıfırlama","Kayıtlı e-posta adresinize sıfırlama bağlantısı gönderelim.")
+   +'<form class="section" id="rsForm" novalidate>'
+   +'<div class="field"><label for="rs_em">E-posta</label><input type="email" id="rs_em" autocomplete="email"></div>'
+   +'<div class="err" id="rs_err" hidden></div><div class="hint" id="rs_ok" hidden></div>'
+   +'<div class="form-actions"><button class="btn primary" type="submit" id="rs_btn">Bağlantı gönder</button><a href="#" class="lnk">Girişe dön</a></div></form>');
+  document.getElementById("rsForm").onsubmit=function(ev){
+    ev.preventDefault();var em=val("rs_em"),er=document.getElementById("rs_err"),ok=document.getElementById("rs_ok");
+    er.hidden=true;ok.hidden=true;if(!em){er.textContent="E-posta girin.";er.hidden=false;return;}
+    auth.languageCode="tr";
+    auth.sendPasswordResetEmail(em).then(function(){ok.textContent="Bu adrese kayıtlı bir hesap varsa sıfırlama bağlantısı gönderildi.";ok.hidden=false;})
+      .catch(function(e){if(e&&e.code==="auth/user-not-found"){ok.textContent="Bu adrese kayıtlı bir hesap varsa sıfırlama bağlantısı gönderildi.";ok.hidden=false;}else{er.textContent=errTr(e);er.hidden=false;}});
+  };
+}
+
+/* ---------- portal (my passports) ---------- */
 function card(id,p){
   var co=p.values&&p.values.carbon;
+  var d=p.updatedAt&&p.updatedAt.toDate?p.updatedAt.toDate():null;
   return '<a class="card" href="#p/'+esc(id)+'">'
     +'<span class="cat">'+esc((CATS[p.category]||{}).label||p.category)+(p.example?' · örnek':'')+'</span>'
-    +'<span class="nm">'+esc(p.values.product_name||"(adsız)")+'</span>'
-    +'<span class="br">'+esc(p.values.brand||"")+'</span>'
-    +'<span class="foot"><span class="slug">#'+esc(id)+'</span>'
+    +'<span class="nm">'+esc((p.values&&p.values.product_name)||"(adsız)")+'</span>'
+    +'<span class="br">'+esc((p.values&&p.values.brand)||"")+((p.values&&p.values.sku)?' · '+esc(p.values.sku):'')+'</span>'
+    +'<span class="foot"><span class="slug">'+(d?d.toLocaleDateString("tr-TR"):'#'+esc(id))+'</span>'
     +(co?'<span class="co2">'+esc(co)+' kgCO₂e</span>':'')+'</span></a>';
 }
 function renderPortal(){
-  var all=loadAll(),ids=Object.keys(all).sort(function(a,b){return (all[b].createdAt||0)-(all[a].createdAt||0)});
-  var h=head("Üretici paneli","Ürün verilerini girin, pasaport oluşturun ve QR kod ile yayınlayın.")
-   +'<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap"><a class="btn primary" href="#new">+ Yeni pasaport</a></div>'
-   +'<div class="grid">'+card(EXAMPLE.slug,EXAMPLE);
-  ids.forEach(function(id){h+=card(id,all[id]);});
-  h+='</div><div class="notice">Bu bir demo sürümüdür: oluşturduğunuz pasaportlar yalnızca bu tarayıcıda saklanır. '
-   +'QR kod ise pasaport verisini bağlantının içinde taşır, bu yüzden başka bir cihazdan da açılır. '
-   +'Kurumsal kullanım için <a href="https://commitedevents.app" target="_top">Commited</a> ile iletişime geçin.</div>';
-  app.innerHTML=h;
+  var co=(profile&&profile.company)||"";
+  app.innerHTML=head("Ürünlerim",(co?co+" · ":"")+"Pasaportlarınızı görüntüleyin, düzenleyin, yenilerini ekleyin.")
+   +'<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center"><a class="btn primary" href="#new">+ Yeni pasaport</a>'
+   +'<input type="search" id="q" class="search" placeholder="Ürün, marka veya SKU ara…" aria-label="Ara"></div>'
+   +'<div id="list"><div class="empty"><span class="spin"></span> Pasaportlar yükleniyor…</div></div>';
+  var list=document.getElementById("list"),rows=[];
+  function paint(){
+    var q=(document.getElementById("q").value||"").toLocaleLowerCase("tr");
+    var f=rows.filter(function(r){var v=r.p.values||{};return !q||[v.product_name,v.brand,v.sku].join(" ").toLocaleLowerCase("tr").indexOf(q)>=0;});
+    if(!rows.length){list.innerHTML='<div class="empty"><b>Henüz pasaportunuz yok.</b><br>Başlamak için “Yeni pasaport” oluşturun.<br><br><a href="#p/ornek-havlu">Örnek pasaportu inceleyin ›</a></div>';return;}
+    if(!f.length){list.innerHTML='<div class="empty">Aramanızla eşleşen ürün yok.</div>';return;}
+    list.innerHTML='<div class="sub" style="margin-top:14px">'+f.length+' pasaport</div><div class="grid">'+f.map(function(r){return card(r.id,r.p)}).join("")+'</div>';
+  }
+  document.getElementById("q").oninput=paint;
+  fs.collection("passports").where("ownerUid","==",me.uid).get().then(function(snap){
+    rows=snap.docs.map(function(d){return {id:d.id,p:d.data()}});
+    rows.sort(function(a,b){return ts(b.p.updatedAt)-ts(a.p.updatedAt)});
+    paint();
+  }).catch(function(e){list.innerHTML='<div class="notice">Liste yüklenemedi: '+esc(errTr(e))+'</div>';});
 }
+function ts(t){return t&&t.toMillis?t.toMillis():0;}
 
-/* ---------- wizard ---------- */
-var draft={category:null,values:{}};
-function renderWizard(){
-  draft={category:null,values:{}};
-  try{var d=lsGet("dpp-draft");if(d)draft=JSON.parse(d)||draft}catch(e){}
+/* ---------- wizard (create / edit) ---------- */
+var draft=null;
+function draftKey(){return "dpp-draft-"+(me?me.uid:"anon");}
+function renderWizard(editId){
+  if(editId){
+    loading("Pasaport yükleniyor…");
+    var ref=fs.collection("passports").doc(editId);
+    Promise.all([ref.get(),ref.collection("private").doc("authority").get().catch(function(){return null})]).then(function(r){
+      if(!r[0].exists||r[0].data().ownerUid!==me.uid){app.innerHTML='<div class="empty">Bu pasaportu düzenleme yetkiniz yok.</div>';return;}
+      var p=r[0].data(),pv=(r[1]&&r[1].exists)?(r[1].data().values||{}):{};
+      draft={id:editId,category:p.category,values:Object.assign({},p.values||{},pv),createdAt:p.createdAt||null};
+      paintWizard();
+    }).catch(function(e){app.innerHTML='<div class="notice">Yüklenemedi: '+esc(errTr(e))+'</div>';});
+    return;
+  }
+  draft={id:null,category:null,values:{}};
+  try{var d=lsGet(draftKey());if(d){var o=JSON.parse(d);if(o&&!o.id)draft=o;}}catch(e){}
   if(!draft.values)draft.values={};
   paintWizard();
 }
-function saveDraft(){lsSet("dpp-draft",JSON.stringify(draft));}
+function saveDraft(){if(!draft.id)lsSet(draftKey(),JSON.stringify(draft));}
 function paintWizard(){
-  var h='<a class="back" href="#">‹ Panele dön</a>'+head("Yeni pasaport","Ürün kategorisini seçin, verileri girin, yayınlayın.");
-  h+='<div class="chooser">'
-   +'<button class="choice'+(draft.category==="TEXTILE"?" on":"")+'" onclick="pickCat(\'TEXTILE\')"><h3>Tekstil</h3><p>'+CATS.TEXTILE.desc+'</p></button>'
-   +'<button class="choice'+(draft.category==="ELECTRONICS"?" on":"")+'" onclick="pickCat(\'ELECTRONICS\')"><h3>Elektronik</h3><p>'+CATS.ELECTRONICS.desc+'</p></button>'
-   +'</div>';
+  var editing=!!draft.id;
+  var h='<a class="back" href="'+(editing?'#p/'+esc(draft.id):'#')+'">‹ '+(editing?'Pasaporta dön':'Ürünlerime dön')+'</a>'
+    +head(editing?"Pasaportu düzenle":"Yeni pasaport",editing?"Değişiklikler kaydedildiğinde aynı QR kod güncel bilgiyi gösterir.":"Ürün kategorisini seçin, verileri girin, yayınlayın.");
+  if(!editing){
+    h+='<div class="chooser">'
+     +'<button class="choice'+(draft.category==="TEXTILE"?" on":"")+'" onclick="pickCat(\'TEXTILE\')"><h3>Tekstil</h3><p>'+CATS.TEXTILE.desc+'</p></button>'
+     +'<button class="choice'+(draft.category==="ELECTRONICS"?" on":"")+'" onclick="pickCat(\'ELECTRONICS\')"><h3>Elektronik</h3><p>'+CATS.ELECTRONICS.desc+'</p></button>'
+     +'</div>';
+  }
   if(draft.category)h+='<div id="form"></div>';
   app.innerHTML=h;
   if(draft.category)paintForm();
@@ -305,7 +453,7 @@ function paintForm(){
     html+='</div>';
   });
   html+='<div class="publishbar"><div class="progress"><div class="bar"><i id="pbar"></i></div><small id="ptext"></small></div>'
-    +'<button class="btn primary" id="pubBtn" onclick="publish()">Yayınla ve QR oluştur</button></div>';
+    +'<button class="btn primary" id="pubBtn" onclick="publish()">'+(draft.id?"Değişiklikleri kaydet":"Yayınla ve QR oluştur")+'</button></div>';
   document.getElementById("form").innerHTML=html;
   updateProgress();
 }
@@ -354,47 +502,68 @@ function updateProgress(){
   if(bar)bar.style.width=(req.length?Math.round(done/req.length*100):100)+"%";
   if(tx)tx.textContent=done+" / "+req.length+" zorunlu alan";
 }
-function cleanVals(v){var o={};for(var k in v){var x=v[k];
-  if(Array.isArray(x)){x=x.filter(function(r){return r&&Object.keys(r).some(function(kk){return r[kk]!=null&&r[kk]!==""})});if(x.length)o[k]=x;}
-  else if(x!=null&&x!==""&&x!==false)o[k]=x;}
-  return o;}
+function cleanVal(x){
+  if(Array.isArray(x)){x=x.filter(function(r){return r&&Object.keys(r).some(function(kk){return r[kk]!=null&&r[kk]!==""})});return x.length?x:undefined;}
+  if(x==null||x===""||x===false)return undefined;return x;
+}
 window.publish=function(){
-  var bad=fieldsOf(draft.category).filter(function(f){return f.r&&!filled(f,draft.values[f.c]);});
+  var defs=fieldsOf(draft.category);
+  var bad=defs.filter(function(f){return f.r&&!filled(f,draft.values[f.c]);});
   if(bad.length){
     bad.forEach(function(f){var el=document.getElementById("field_"+f.c);if(el)el.classList.add("invalid");
       var e=document.getElementById("err_"+f.c);if(e){e.textContent="Zorunlu alan";e.hidden=false;}});
     var first=document.getElementById("field_"+bad[0].c);if(first)first.scrollIntoView({behavior:"smooth",block:"center"});
     return;
   }
-  var slug=genSlug(),all=loadAll();
-  all[slug]={category:draft.category,values:cleanVals(draft.values),createdAt:Date.now()};
-  saveAll(all);lsDel("dpp-draft");draft={category:null,values:{}};
-  location.hash="p/"+slug;
+  var pub={},priv={};
+  defs.forEach(function(f){var x=cleanVal(draft.values[f.c]);if(x===undefined)return;(f.a==="AUTHORITY"?priv:pub)[f.c]=x;});
+  var btn=document.getElementById("pubBtn");btn.disabled=true;btn.innerHTML='<span class="spin"></span> Kaydediliyor…';
+  var id=draft.id||genSlug(),now=firebase.firestore.FieldValue.serverTimestamp();
+  var ref=fs.collection("passports").doc(id),b=fs.batch();
+  b.set(ref,{ownerUid:me.uid,category:draft.category,values:pub,company:(profile&&profile.company)||"",
+    createdAt:draft.createdAt||now,updatedAt:now});
+  b.set(ref.collection("private").doc("authority"),{values:priv,updatedAt:now});
+  b.commit().then(function(){
+    if(!draft.id)lsDel(draftKey());
+    draft=null;location.hash="p/"+id;
+  }).catch(function(e){
+    btn.disabled=false;btn.textContent=draft.id?"Değişiklikleri kaydet":"Yayınla ve QR oluştur";
+    var m=document.createElement("div");m.className="notice";m.textContent="Kaydedilemedi: "+errTr(e);btn.parentNode.appendChild(m);
+  });
 };
-window.delP=function(id){if(!confirm("Bu pasaport bu tarayıcıdan silinsin mi?"))return;var all=loadAll();delete all[id];saveAll(all);location.hash="";};
 
 /* ---------- public passport ---------- */
 var showAuth=false;
-function paintPublic(p,localId){
-  var cat=p.category,v=p.values||{};
-  var base=location.href.split("#")[0];
-  var url=base+"#v/"+encodeP(p);
-  var co=v.carbon,rc=v.recycled_content;
-  var h='<a class="back" href="#">‹ Panele dön</a>';
+function renderPublic(id){
+  if(id===EXAMPLE.id){return paintPublic(EXAMPLE,id,EXAMPLE.priv,false);}
+  loading("Pasaport yükleniyor…");
+  fs.collection("passports").doc(id).get().then(function(d){
+    if(!d.exists){app.innerHTML=head("Pasaport bulunamadı","")+'<div class="empty">Bu bağlantıya ait pasaport bulunamadı.</div><a class="back" href="#">‹ Ana sayfa</a>';return;}
+    var p=d.data(),owner=!!(me&&p.ownerUid===me.uid);
+    if(!owner)return paintPublic(p,id,null,false);
+    d.ref.collection("private").doc("authority").get().then(function(x){paintPublic(p,id,x.exists?(x.data().values||{}):{},true);})
+      .catch(function(){paintPublic(p,id,{},true);});
+  }).catch(function(e){app.innerHTML='<div class="notice">Yüklenemedi: '+esc(errTr(e))+'</div>';});
+}
+function paintPublic(p,id,priv,owner){
+  var cat=p.category,v=Object.assign({},p.values||{},(showAuth&&priv)?priv:{});
+  var url=location.href.split("#")[0]+"#p/"+id;
+  var h='<a class="back" href="#">‹ '+(me?"Ürünlerime dön":"Ana sayfa")+'</a>';
   h+='<div class="pp-hero"><div class="main">'
     +'<span class="eyebrow">'+esc(CATS[cat].label)+' · Dijital Ürün Pasaportu</span>'
     +'<h1>'+esc(v.product_name||"(adsız ürün)")+'</h1>'
     +'<div class="br">'+esc(v.brand||"")+(v.sku?' · <span class="mono">'+esc(v.sku)+'</span>':'')+'</div>'
-    +'<div style="margin-top:6px">'+(p.example?'<span class="pill auth">Örnek veri</span>':'<span class="pill ok">Demo pasaport</span>')+'</div>'
-    +'</div><div><div class="qrbox" id="qr"></div><div style="text-align:center;margin-top:6px" class="slug">Okutun ve açın</div></div></div>';
+    +(p.company?'<div class="sub">Üretici: '+esc(p.company)+'</div>':'')
+    +'<div style="margin-top:6px">'+(p.example?'<span class="pill auth">Örnek veri</span>':'<span class="pill ok">Commited DPP</span>')+'</div>'
+    +'</div><div><div class="qrbox" id="qr"></div><div style="text-align:center;margin-top:6px" class="slug">#'+esc(id)+'</div></div></div>';
   h+='<div class="facts">';
-  if(co)h+=fact("Karbon ayak izi",esc(co)+" kgCO₂e");
-  if(rc)h+=fact("Geri dönüştürülmüş","%"+esc(rc));
+  if(v.carbon)h+=fact("Karbon ayak izi",esc(v.carbon)+" kgCO₂e");
+  if(v.recycled_content)h+=fact("Geri dönüştürülmüş","%"+esc(v.recycled_content));
   if(v.country_origin)h+=fact("Menşe",esc(v.country_origin));
   if(cat==="ELECTRONICS"&&v.energy_class)h+=fact("Enerji sınıfı",esc(v.energy_class));
   h+='</div>';
   CATS[cat].sections.forEach(function(s){
-    var rows=s.fields.filter(function(f){return (f.a!=="AUTHORITY"||showAuth)&&filled(f,v[f.c]);});
+    var rows=s.fields.filter(function(f){return filled(f,v[f.c]);});
     if(!rows.length)return;
     if(s.title==="Sertifikalar"){
       h+='<div class="pp-sec"><h3>Sertifikalar</h3><div class="certs">';
@@ -405,19 +574,32 @@ function paintPublic(p,localId){
     rows.forEach(function(f){h+='<div class="row"><span class="k">'+esc(f.l)+(f.a==="AUTHORITY"?' '+badge("AUTHORITY"):'')+'</span><span class="v">'+esc(fmtVal(f,v[f.c]))+'</span></div>';});
     h+='</div>';
   });
-  h+='<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">'
-    +'<button class="btn sm" onclick="toggleAuth()">'+(showAuth?"Otorite alanlarını gizle":"Otorite görünümü (gümrük/denetim)")+'</button>'
-    +'<button class="btn sm" id="copyBtn">Bağlantıyı kopyala</button>'
-    +(localId&&!p.example?'<button class="btn sm danger" onclick="delP(\''+esc(localId)+'\')">Sil</button>':'')+'</div>';
-  h+='<div class="foot-note">Bu pasaport ESPR (AB 2024/1781) veri yapısına göre hazırlanmış bir demodur.<br>Powered by <b>Commited</b> · Dijital Ürün Pasaportu</div>';
+  h+='<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">';
+  if(priv)h+='<button class="btn sm" onclick="toggleAuth()">'+(showAuth?"Otorite alanlarını gizle":"Otorite görünümü (gümrük/denetim)")+'</button>';
+  h+='<button class="btn sm" id="copyBtn">Bağlantıyı kopyala</button><button class="btn sm" id="dlBtn">QR indir</button>';
+  if(owner)h+='<a class="btn sm primary" href="#edit/'+esc(id)+'">Düzenle</a><button class="btn sm danger" onclick="delP(\''+esc(id)+'\')">Sil</button>';
+  h+='</div>';
+  if(!priv)h+='<div class="notice">Üretim tesisi, tedarikçiler ve kimyasal madde notları gibi otorite alanları yalnızca yetkili kişilere açıktır.</div>';
+  h+='<div class="foot-note">Bu pasaport ESPR (AB 2024/1781) veri yapısına göre hazırlanmıştır.<br>Powered by <b>Commited</b> · Dijital Ürün Pasaportu</div>';
   app.innerHTML=h;
   document.getElementById("copyBtn").onclick=function(){
     var b=this;try{navigator.clipboard.writeText(url).then(function(){b.textContent="Kopyalandı ✓";setTimeout(function(){b.textContent="Bağlantıyı kopyala"},1500)},function(){prompt("Bağlantı:",url)})}catch(e){prompt("Bağlantı:",url)}
   };
-  try{new QRCode(document.getElementById("qr"),{text:url,width:160,height:160,colorDark:"#15201B",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.L});}
+  try{new QRCode(document.getElementById("qr"),{text:url,width:150,height:150,colorDark:"#15201B",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});}
   catch(e){document.getElementById("qr").innerHTML='<span class="slug">QR oluşturulamadı</span>';}
+  document.getElementById("dlBtn").onclick=function(){
+    var c=document.querySelector("#qr canvas"),img=document.querySelector("#qr img");
+    var src=c?c.toDataURL("image/png"):(img?img.src:null);if(!src)return;
+    var a=document.createElement("a");a.href=src;a.download="pasaport-"+id+".png";document.body.appendChild(a);a.click();a.remove();
+  };
 }
 window.toggleAuth=function(){showAuth=!showAuth;route();};
+window.delP=function(id){
+  if(!confirm("Bu pasaport kalıcı olarak silinsin mi? QR kodu artık çalışmaz."))return;
+  var ref=fs.collection("passports").doc(id);
+  ref.collection("private").doc("authority").delete().catch(function(){}).then(function(){return ref.delete();})
+    .then(function(){location.hash="";}).catch(function(e){alert("Silinemedi: "+errTr(e));});
+};
 function fact(k,v){return '<div class="fact"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';}
 function fmtVal(f,v){
   if(f.t==="BOOL")return v?"Evet":"Hayır";
@@ -427,9 +609,8 @@ function fmtVal(f,v){
   }
   return v+(f.u?" "+f.u:"");
 }
-function head(title,sub){return '<span class="eyebrow">Commited · DPP</span><h1 class="page-h">'+esc(title)+'</h1>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'');}
-
 route();
+
 </script>
 </body>
 </html>
