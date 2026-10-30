@@ -86,9 +86,9 @@ main{padding-block:22px 64px}
 .field>label{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .req{color:var(--danger)}
 .u{color:var(--muted);font-weight:500;font-size:12px}
-.field input[type=text],.field input[type=number],.field input[type=url],.field textarea,.rep-row input{font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--fg);width:100%}
+.field input[type=text],.field input[type=number],.field input[type=url],.field textarea,.field select,.rep-row input{font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--fg);width:100%}
 .field textarea{resize:vertical;min-height:58px}
-.field input:focus,.field textarea:focus,.rep-row input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.field input:focus,.field textarea:focus,.field select:focus,.rep-row input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 .field.invalid input,.field.invalid textarea{border-color:var(--danger)}
 .err{color:var(--danger);font-size:12px}
 .hint{color:var(--muted);font-size:12px}
@@ -234,7 +234,10 @@ var COMMON=[
    {c:"facility",l:"Üretim tesisi",t:"TEXT",r:1,a:"AUTHORITY"}]},
  {title:"Çevresel performans",fields:[
    {c:"carbon",l:"Karbon ayak izi (üretici beyanı)",t:"NUMBER",u:"kgCO₂e / ürün",a:"PUBLIC",note:"Kendi hesapladığınız veya doğrulattığınız değer. Boş bırakırsanız pasaportta Commited ön hesaplaması (tahmini) gösterilir."},
-   {c:"carbon_method",l:"Hesaplama yöntemi ve kapsamı",t:"TEXT",a:"PUBLIC",note:"ör. ISO 14067, cradle-to-gate, üçüncü taraf doğrulamalı"}]}
+   {c:"carbon_level",l:"Değerin dayanağı",t:"SELECT",a:"PUBLIC",opts:["declared","calculated","verified"],note:"Değeri siz beyan edersiniz; Commited bu değeri doğrulamaz. Seçtiğiniz dayanağa göre pasaportta güven seviyesi gösterilir."},
+   {c:"carbon_method",l:"Hesaplama yöntemi ve kapsamı",t:"TEXT",a:"PUBLIC",note:"ör. ISO 14067, cradle-to-gate, 2025 üretim verisi"},
+   {c:"carbon_verifier",l:"Doğrulayan kuruluş",t:"TEXT",a:"PUBLIC",note:"Yalnızca üçüncü taraf doğrulamada: kuruluş adı ve rapor no"},
+   {c:"carbon_cert",l:"Doğrulama belgesi",t:"FILES",kind:"pdf",max:2,a:"PUBLIC",note:"Üçüncü taraf doğrulama seçildiyse zorunlu · PDF · herkese açık"}]}
 ];
 var TAIL=[
  {title:"Kullanım ve yaşam sonu",fields:[
@@ -321,7 +324,7 @@ var EXAMPLE={id:"ornek-havlu",category:"TEXTILE",example:true,values:{
 
 /* ---------- i18n (TR / EN) ---------- */
 var EN_F={product_name:"Product name",brand:"Brand",sku:"Model / SKU",photos:"Product photos",cert_docs:"Certificate documents",tech_docs:"Technical documents",gtin:"GTIN (barcode)",lot:"Batch / lot no",serial:"Serial no",weight_g:"Weight",color:"Colour",
- country_origin:"Country of origin",facility:"Manufacturing facility",carbon:"Carbon footprint (manufacturer declaration)",carbon_method:"Calculation method and scope",elec_kwh:"Electricity per product",gas_kwh:"Natural gas per product",waste_pct:"Production waste",
+ country_origin:"Country of origin",facility:"Manufacturing facility",carbon:"Carbon footprint (manufacturer declaration)",carbon_method:"Calculation method and scope",carbon_level:"Basis of the value",carbon_verifier:"Verification body",carbon_cert:"Verification statement",elec_kwh:"Electricity per product",gas_kwh:"Natural gas per product",waste_pct:"Production waste",
  care:"Care instructions",end_of_life:"Recycling / disposal",certificates:"Certificates",
  fiber_composition:"Fibre composition",recycled_content:"Recycled content",fabric_weight:"Fabric weight",
  reach:"REACH compliant",azo_free:"Free of azo dyes",svhc:"SVHC (>0.1%) note",
@@ -336,7 +339,7 @@ var EN_S={"Kimlik":"Identity","Menşe":"Origin","Çevresel performans":"Environm
  "Kimyasal güvenlik":"Chemical safety","Tedarik zinciri":"Supply chain","Dayanıklılık":"Durability",
  "Madde uyumu":"Substance compliance","Enerji":"Energy","Dayanıklılık ve onarım":"Durability and repair",
  "Güvenlik ve batarya":"Safety and battery","Yaşam sonu":"End of life","Teknik dosya":"Technical file","Karbon ön hesaplama girdileri":"Carbon pre-calculation inputs"};
-var EN_N={"Kendi hesapladığınız veya doğrulattığınız değer. Boş bırakırsanız pasaportta Commited ön hesaplaması (tahmini) gösterilir.":"Your own calculated or verified value. If left empty, the passport shows the Commited pre-calculation (estimate).","ör. ISO 14067, cradle-to-gate, üçüncü taraf doğrulamalı":"e.g. ISO 14067, cradle-to-gate, third-party verified","Aylık elektrik tüketimi ÷ aylık üretim adedi (iplik, dokuma, boyama, konfeksiyon dahil)":"Monthly electricity use ÷ monthly units produced (incl. spinning, weaving, dyeing, making)","Faturadaki kWh ÷ aylık üretim adedi":"kWh on the bill ÷ monthly units produced","Kesim ve üretim kaybı; bilinmiyorsa boş bırakın":"Cutting and production loss; leave empty if unknown","En fazla 3 fotoğraf · JPG, PNG veya WebP · dosya başına 10 MB":"Up to 3 photos · JPG, PNG or WebP · 10 MB per file","Sertifikaların PDF kopyaları · herkese açık":"PDF copies of certificates · public","Test raporları, REACH/SVHC beyanları, uygunluk beyanı · yalnızca siz ve yetkililer görür":"Test reports, REACH/SVHC declarations, declaration of conformity · visible only to you and authorities","Commited karbon motoru ile hesaplanır":"Calculated with the Commited carbon engine","ör. boyama, dikim":"e.g. dyeing, sewing",
+var EN_N={"Değeri siz beyan edersiniz; Commited bu değeri doğrulamaz. Seçtiğiniz dayanağa göre pasaportta güven seviyesi gösterilir.":"You declare this value; Commited does not verify it. The passport shows a confidence level based on the basis you choose.","ör. ISO 14067, cradle-to-gate, 2025 üretim verisi":"e.g. ISO 14067, cradle-to-gate, 2025 production data","Yalnızca üçüncü taraf doğrulamada: kuruluş adı ve rapor no":"Third-party verification only: body name and report no.","Üçüncü taraf doğrulama seçildiyse zorunlu · PDF · herkese açık":"Required if third-party verification is selected · PDF · public","Kendi hesapladığınız veya doğrulattığınız değer. Boş bırakırsanız pasaportta Commited ön hesaplaması (tahmini) gösterilir.":"Your own calculated or verified value. If left empty, the passport shows the Commited pre-calculation (estimate).","ör. ISO 14067, cradle-to-gate, üçüncü taraf doğrulamalı":"e.g. ISO 14067, cradle-to-gate, third-party verified","Aylık elektrik tüketimi ÷ aylık üretim adedi (iplik, dokuma, boyama, konfeksiyon dahil)":"Monthly electricity use ÷ monthly units produced (incl. spinning, weaving, dyeing, making)","Faturadaki kWh ÷ aylık üretim adedi":"kWh on the bill ÷ monthly units produced","Kesim ve üretim kaybı; bilinmiyorsa boş bırakın":"Cutting and production loss; leave empty if unknown","En fazla 3 fotoğraf · JPG, PNG veya WebP · dosya başına 10 MB":"Up to 3 photos · JPG, PNG or WebP · 10 MB per file","Sertifikaların PDF kopyaları · herkese açık":"PDF copies of certificates · public","Test raporları, REACH/SVHC beyanları, uygunluk beyanı · yalnızca siz ve yetkililer görür":"Test reports, REACH/SVHC declarations, declaration of conformity · visible only to you and authorities","Commited karbon motoru ile hesaplanır":"Calculated with the Commited carbon engine","ör. boyama, dikim":"e.g. dyeing, sewing",
  "GS1 Türkiye'den alınan 8, 12, 13 veya 14 haneli numara — kontrol hanesi doğrulanır":"8, 12, 13 or 14-digit number from GS1 — check digit is validated",
  "Parti düzeyinde pasaport için (GS1 AI 10)":"For batch-level passports (GS1 AI 10)","Tekil ürün düzeyinde pasaport için (GS1 AI 21)":"For item-level passports (GS1 AI 21)"};
 var EN_SUB={"Tür (ör. GOTS)":"Type (e.g. GOTS)","Lif":"Fibre","Malzeme":"Material","Tedarikçi":"Supplier"};
@@ -352,13 +355,17 @@ var UI={
   auth_note:"Üretim tesisi, tedarikçiler ve kimyasal madde notları gibi otorite alanları yalnızca yetkili kişilere açıktır.",
   foot:"Bu pasaport ESPR (AB 2024/1781) veri yapısına göre hazırlanmıştır.",
   lang_note:"Girilen değerler (ör. bakım talimatı) yazıldığı dilde gösterilir.",lang_note_en:"Bazı açıklamaların İngilizce karşılığı girilmemiş; bunlar yazıldığı dilde gösterilir.",
-  est_t:"Commited ön hesaplaması",est_tag:"tahmini",decl_tag:"üretici beyanı",est_partial:"kısmi",
+  est_t:"Commited ön hesaplaması",est_tag:"tahmini",decl_tag:"firma beyanı",est_partial:"kısmi",
   est_mat:"Lif üretimi",est_elec:"Üretim elektriği",est_gas:"Üretim doğalgazı",est_total:"Toplam (ürün başına)",
   est_scope:"Kapsam: cradle-to-gate (lif üretimi + üretim enerjisi). Nakliye, ambalaj, kullanım ve yaşam sonu dahil değildir.",
   est_disc:"Bu bir ön hesaplamadır; ISO 14067 uyumlu, doğrulanmış bir karbon ayak izi değildir. Doğrulanmış değer için Commited ile iletişime geçin.",
   est_need_w:"Ağırlık girilmeli",est_need_f:"Lif kompozisyonu girilmeli",est_sum:"Lif oranları toplamı %100 olmalı",est_nofactor:"Bu lif için kaynaklı faktör yok",
   est_noenergy:"Üretim enerjisi girilmedi; toplam yalnızca lif aşamasını içerir.",est_none:"Ön hesaplama için eksik veri:",est_src:"Kaynaklar",est_recy:"Geri dönüştürülmüş lifler için ihtiyatlı olarak birincil lif faktörü kullanılır.",
   est_live:"Girdikçe güncellenir. Pasaportta, üretici beyanı yoksa bu değer \"tahmini\" etiketiyle gösterilir.",carbon_t:"Karbon ayak izi",method:"Yöntem",
+  lv_pick:"Seçin…",lv_declared:"Firma beyanı (yöntem belgelenmemiş)",lv_calculated:"Firma hesabı – standart yöntemle (ISO 14067 / PEF / GHG Protocol), doğrulanmamış",lv_verified:"Üçüncü taraf doğrulamalı (akredite kuruluş, ISO 14067 / ISO 14064-3)",
+  lvs_declared:"Firma beyanı",lvs_calculated:"Firma hesabı, doğrulanmamış",lvs_verified:"Üçüncü taraf doğrulamalı",lvs_estimate:"Commited ön hesaplaması",
+  lv_conf:"Güven seviyesi",lv_disc:"Bu değer firma tarafından beyan edilmiştir. Commited tarafından doğrulanmamıştır.",lv_vdisc:"Doğrulama belgesi firma tarafından yüklenmiştir; Commited belgenin içeriğini onaylamaz.",
+  lv_down:"Üçüncü taraf doğrulama için doğrulama belgesi yüklenmedi; pasaportta \"Firma hesabı, doğrulanmamış\" olarak gösterilecek.",verifier:"Doğrulayan",
   add_photo:"+ Fotoğraf ekle",add_pdf:"+ PDF ekle",uploading:"Yükleniyor…",too_big:"Dosya 10 MB'dan büyük",bad_type:"Bu dosya türü desteklenmiyor",max_files:"En fazla dosya sayısına ulaşıldı",up_fail:"Yükleme başarısız",view:"Görüntüle",en_twin:"İngilizce karşılığı",en_twin_hint:"İsteğe bağlı · pasaport İngilizce açıldığında bu metin gösterilir",docs:"Belgeler",wait_up:"Yüklemeler bitene kadar bekleyin",qr_lang:"QR dili",
   ids:"Tanımlayıcılar",dl:"GS1 Digital Link",gran:"Pasaport düzeyi",g_model:"Model",g_batch:"Parti",g_item:"Tekil ürün",
   label_btn:"QR etiketi",label_t:"Ürün etiketi",print:"Yazdır / PDF",
@@ -375,13 +382,17 @@ var UI={
   auth_note:"Authority fields such as the manufacturing facility, suppliers and chemical substance notes are only available to authorised parties.",
   foot:"This passport follows the ESPR (EU 2024/1781) data structure.",
   lang_note:"Entered values (e.g. care instructions) are shown in the language they were written in.",lang_note_en:"Some descriptions have no English version yet and are shown in the original language.",
-  est_t:"Commited pre-calculation",est_tag:"estimate",decl_tag:"manufacturer declaration",est_partial:"partial",
+  est_t:"Commited pre-calculation",est_tag:"estimate",decl_tag:"company declaration",est_partial:"partial",
   est_mat:"Fibre production",est_elec:"Production electricity",est_gas:"Production natural gas",est_total:"Total (per product)",
   est_scope:"Scope: cradle-to-gate (fibre production + production energy). Transport, packaging, use and end of life are excluded.",
   est_disc:"This is a pre-calculation, not a verified ISO 14067 carbon footprint. Contact Commited for a verified value.",
   est_need_w:"Weight is required",est_need_f:"Fibre composition is required",est_sum:"Fibre shares must add up to 100%",est_nofactor:"No sourced factor for this fibre",
   est_noenergy:"Production energy not entered; the total covers the fibre stage only.",est_none:"Missing data for the pre-calculation:",est_src:"Sources",est_recy:"For recycled fibres the virgin fibre factor is used as a conservative assumption.",
   est_live:"Updates as you type. If there is no manufacturer declaration, the passport shows this value labelled \"estimate\".",carbon_t:"Carbon footprint",method:"Method",
+  lv_pick:"Select…",lv_declared:"Company declaration (method not documented)",lv_calculated:"Company calculation – standard method (ISO 14067 / PEF / GHG Protocol), not verified",lv_verified:"Third-party verified (accredited body, ISO 14067 / ISO 14064-3)",
+  lvs_declared:"Company declaration",lvs_calculated:"Company calculation, not verified",lvs_verified:"Third-party verified",lvs_estimate:"Commited pre-calculation",
+  lv_conf:"Confidence level",lv_disc:"This value is declared by the company. It has not been verified by Commited.",lv_vdisc:"The verification statement was uploaded by the company; Commited does not endorse its content.",
+  lv_down:"No verification statement uploaded; the passport will show \"Company calculation, not verified\".",verifier:"Verified by",
   add_photo:"+ Add photo",add_pdf:"+ Add PDF",uploading:"Uploading…",too_big:"File is larger than 10 MB",bad_type:"This file type is not supported",max_files:"Maximum number of files reached",up_fail:"Upload failed",view:"View",en_twin:"English version",en_twin_hint:"Optional · shown when the passport is opened in English",docs:"Documents",wait_up:"Please wait for uploads to finish",qr_lang:"QR language",
   ids:"Identifiers",dl:"GS1 Digital Link",gran:"Passport level",g_model:"Model",g_batch:"Batch",g_item:"Item",
   label_btn:"QR label",label_t:"Product label",print:"Print / PDF",
@@ -653,6 +664,10 @@ function renderField(f,val){
       +'<div class="en-twin"><div class="en-lab"><b>EN</b>'+T("en_twin")+'</div>'
       +'<textarea id="'+id+'_en" lang="en" oninput="setVal(\''+f.c+'_en\',this.value)">'+esc(ev||"")+'</textarea>'
       +'<span class="hint">'+T("en_twin_hint")+'</span></div>';
+  }else if(f.t==="SELECT"){
+    body='<select id="'+id+'" onchange="setVal(\''+f.c+'\',this.value)"><option value="">'+T("lv_pick")+'</option>'
+      +f.opts.map(function(o){return '<option value="'+o+'"'+(val===o?' selected':'')+'>'+esc(T("lv_"+o))+'</option>'}).join("")+'</select>'
+      +(f.c==="carbon_level"?'<span class="hint" id="lvWarn" style="color:var(--warn,#b45309)"></span>':'');
   }else if(f.t==="FILES"){
     body='<div class="files" id="files_'+f.c+'">'+fileRows(f,val)+'</div>'
       +'<label class="upl">'+(f.kind==="image"?T("add_photo"):T("add_pdf"))
@@ -692,7 +707,7 @@ function updateProgress(){
   var bar=document.getElementById("pbar"),tx=document.getElementById("ptext");
   if(bar)bar.style.width=(req.length?Math.round(done/req.length*100):100)+"%";
   if(tx)tx.textContent=done+" / "+req.length+" "+T("req_count");
-  paintEst();
+  paintEst();paintLv();
 }
 function cleanVal(x){
   if(Array.isArray(x)){x=x.filter(function(r){return r&&Object.keys(r).some(function(kk){return r[kk]!=null&&r[kk]!==""})});return x.length?x:undefined;}
@@ -732,6 +747,14 @@ window.publish=function(){
   });
 };
 
+/* ---------- carbon confidence level ---------- */
+var LV_N={verified:4,calculated:3,declared:2,estimate:1};
+function carbonLevel(v){ if(!v||!v.carbon)return (v&&v.carbon_est&&v.carbon_est.total!=null)?"estimate":null;
+  var l=v.carbon_level||"declared"; if(l==="verified"&&!((v.carbon_cert||[]).length))l="calculated"; return l;}
+function lvPill(l){return '<span class="pill '+(l==="verified"?'ok':'auth')+'">'+T("lvs_"+l)+'</span>';}
+function lvLine(l){return '<div class="row"><span class="k">'+T("lv_conf")+'</span><span class="v"><b>'+LV_N[l]+'/4</b> · '+T("lvs_"+l)+'</span></div>';}
+function paintLv(){var w=document.getElementById("lvWarn");if(!w||!draft)return;var v=draft.values;
+  w.textContent=(v.carbon_level==="verified"&&!((v.carbon_cert||[]).length))?T("lv_down"):"";}
 /* ---------- Commited carbon pre-calculation (textile, cradle-to-gate) ---------- */
 var EST_VER="CM-TX-1 (2026-10)";
 var FIBER_EF=[ // kg CO2e / kg staple fibre; Forfora et al. 2026, Sustainability 18(8):4070, Ecoinvent 3.10
@@ -931,7 +954,8 @@ function paintPublic(p,id,priv,owner){
   if(photos.length)h+='<div class="gallery">'+photos.map(function(x){return '<a href="'+esc(x.url)+'" target="_blank" rel="noopener"><img src="'+esc(x.url)+'" alt="'+esc(v.product_name||"")+'" loading="lazy"></a>'}).join("")+'</div>';
   h+='<div class="facts">';
   var ce=v.carbon_est;
-  if(v.carbon)h+=fact(T("f_carbon")+' · '+T("decl_tag"),esc(v.carbon)+" kgCO₂e");
+  var cl=carbonLevel(v);
+  if(v.carbon)h+=fact(T("f_carbon")+' · '+T("lvs_"+cl),esc(v.carbon)+" kgCO₂e");
   else if(ce&&ce.total!=null)h+=fact(T("f_carbon")+' · '+T("est_tag"),"≈ "+fmtKg(ce.total)+" kgCO₂e");
   if(v.recycled_content)h+=fact(T("f_rec"),"%"+esc(v.recycled_content));
   if(v.country_origin)h+=fact(T("f_origin"),esc(v.country_origin));
@@ -950,8 +974,13 @@ function paintPublic(p,id,priv,owner){
     if(!rows.length&&!(s.title==="Çevresel performans"&&ce&&ce.total!=null))return;
     if(s.title==="Çevresel performans"){
       h+='<div class="pp-sec"><h3>'+SL(s.title)+'</h3>';
-      if(v.carbon)h+='<div class="row"><span class="k">'+T("carbon_t")+' <span class="pill ok">'+T("decl_tag")+'</span></span><span class="v mono">'+esc(v.carbon)+' kgCO₂e</span></div>'
-        +(v.carbon_method?'<div class="row"><span class="k">'+T("method")+'</span><span class="v">'+esc(v.carbon_method)+'</span></div>':'');
+      if(v.carbon)h+='<div class="row"><span class="k">'+T("carbon_t")+' '+lvPill(cl)+'</span><span class="v mono">'+esc(v.carbon)+' kgCO₂e</span></div>'
+        +lvLine(cl)
+        +(v.carbon_method?'<div class="row"><span class="k">'+T("method")+'</span><span class="v">'+esc(v.carbon_method)+'</span></div>':'')
+        +(cl==="verified"&&v.carbon_verifier?'<div class="row"><span class="k">'+T("verifier")+'</span><span class="v">'+esc(v.carbon_verifier)+'</span></div>':'')
+        +(cl==="verified"?'<div style="margin-top:8px">'+docList(v.carbon_cert,false)+'</div>':'')
+        +'<div class="hint" style="margin-top:6px">'+T("lv_disc")+(cl==="verified"?' '+T("lv_vdisc"):'')+'</div>';
+      else if(ce&&ce.total!=null)h+=lvLine("estimate");
       if(ce&&ce.total!=null)h+='<div class="estpub" style="margin-top:'+(v.carbon?'14':'0')+'px">'+estHtml(Object.assign({ok:true,issues:[]},ce),true)+'</div>';
       h+='</div>';return;
     }
@@ -1036,7 +1065,8 @@ function jsonLd(p,v,url){
   fieldsOf(cat).forEach(function(f){if(f.a!=="PUBLIC"||!filled(f,v[f.c]))return;
     if(["product_name","brand","sku","gtin","lot","serial","certificates","country_origin"].indexOf(f.c)>=0)return;
     if(f.t==="FILES")return;
-    if(f.c==="carbon"){props.push({"@type":"PropertyValue",propertyID:"carbon_declared",name:"Carbon footprint (manufacturer declaration)",value:num(v.carbon),unitText:"kg CO2e per product",description:v.carbon_method||undefined});return;}
+    if(f.c==="carbon"){props.push({"@type":"PropertyValue",propertyID:"carbon_declared",name:"Carbon footprint (company declaration, not verified by Commited)",value:num(v.carbon),unitText:"kg CO2e per product",description:["Basis: "+UI.en["lvs_"+carbonLevel(v)]+" (confidence "+LV_N[carbonLevel(v)]+"/4)",v.carbon_method,carbonLevel(v)==="verified"&&v.carbon_verifier?"Verified by: "+v.carbon_verifier:""].filter(Boolean).join("; ")});return;}
+    if(f.c==="carbon_level"||f.c==="carbon_verifier")return;
     props.push({"@type":"PropertyValue",propertyID:f.c,name:EN_F[f.c]||f.l,value:(f.t==="REP"||f.t==="BOOL")?fmtValLang(f,v[f.c],"en"):(f.t==="LONG"?txtFor(v,f.c,"en"):v[f.c]),unitText:f.u?(EN_U[f.u]||f.u):undefined});});
   return {"@context":{"@vocab":"https://schema.org/","gs1":"https://ref.gs1.org/voc/"},
     "@type":"Product","@id":digitalLink(v)||undefined,name:v.product_name,brand:{"@type":"Brand",name:v.brand},
