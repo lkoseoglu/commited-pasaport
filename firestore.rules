@@ -2,10 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Commited yoneticisi: dogrulanmis commitedapp@gmail.com hesabi
+    // Commited yoneticileri: dogrulanmis e-posta adresleri
     function isAdmin() {
       return request.auth != null
-        && request.auth.token.email == 'commitedapp@gmail.com'
+        && request.auth.token.email in ['commitedapp@gmail.com', 'levent.koseoglu@commited.app']
         && request.auth.token.email_verified == true;
     }
 
