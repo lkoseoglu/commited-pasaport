@@ -162,6 +162,14 @@ main{padding-block:22px 64px}
 .dpp-label.s50{width:50mm;height:30mm}.dpp-label.s50 .lq{width:24mm}.dpp-label.s50 .l-nm{font-size:7pt}.dpp-label.s50 .l-br,.dpp-label.s50 .l-co,.dpp-label.s50 .l-sc{font-size:5.5pt}
 .dpp-label.s70{width:70mm;height:40mm}.dpp-label.s70 .lq{width:33mm}.dpp-label.s70 .l-nm{font-size:9pt}.dpp-label.s70 .l-br,.dpp-label.s70 .l-co,.dpp-label.s70 .l-sc{font-size:6.5pt}.dpp-label.s70 .l-hri{font-size:6pt}
 .dpp-label.s100{width:100mm;height:60mm;padding:4mm;gap:5mm}.dpp-label.s100 .lq{width:50mm}.dpp-label.s100 .l-ey{font-size:7pt}.dpp-label.s100 .l-nm{font-size:13pt}.dpp-label.s100 .l-br,.dpp-label.s100 .l-co,.dpp-label.s100 .l-sc{font-size:8.5pt}.dpp-label.s100 .l-hri{font-size:8pt}.dpp-label.s100 .l-ft{font-size:6pt}
+.tbl-wrap{overflow-x:auto;margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius)}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tabs{display:flex;gap:6px;margin-top:18px;flex-wrap:wrap}
+.tabs button{font-family:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:6px 14px;cursor:pointer}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .jsonbox{width:100%;min-height:220px;font-family:var(--mono);font-size:12px;padding:10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--fg)}
 @media print{
   @page{margin:8mm}
@@ -264,6 +272,9 @@ firebase.initializeApp({
   appId:"1:284797252392:web:e195af964fc981c5d6d61d"
 });
 var auth=firebase.auth(), fs=firebase.firestore();
+var ADMIN_EMAIL="commitedapp@gmail.com";
+function isAdminEmail(){return !!(me&&me.email&&me.email.toLowerCase()===ADMIN_EMAIL);}
+function isAdmin(){return isAdminEmail()&&me.emailVerified;}
 var me=null, profile=null, authReady=false;
 
 /* ---------- example passport (sample data, static) ---------- */
@@ -384,7 +395,7 @@ function errTr(e){
 function userbar(){
   var el=document.getElementById("userbar");
   if(!me){el.innerHTML="";return;}
-  el.innerHTML='<span class="who">'+esc((profile&&profile.username)||me.email)+'</span><button class="btn sm" id="logoutBtn">Çıkış</button>';
+  el.innerHTML=(isAdminEmail()?'<a class="btn sm" href="#admin">Admin</a>':'')+'<span class="who">'+esc((profile&&profile.username)||me.email)+'</span><button class="btn sm" id="logoutBtn">Çıkış</button>';
   document.getElementById("logoutBtn").onclick=function(){auth.signOut().then(function(){location.hash="";});};
 }
 
@@ -404,6 +415,7 @@ function route(){
   if(h.indexOf("p/")===0)return renderPublic(h.slice(2));
   if(!authReady)return loading();
   if(!me){return h==="kayit"?renderRegister():(h==="sifre"?renderReset():renderLogin());}
+  if(h==="admin")return renderAdmin();
   if(h==="new")return renderWizard(null);
   if(h.indexOf("edit/")===0)return renderWizard(h.slice(5));
   return renderPortal();
@@ -642,7 +654,9 @@ window.publish=function(){
   b.set(ref,{ownerUid:me.uid,category:draft.category,values:pub,company:(profile&&profile.company)||"",
     createdAt:draft.createdAt||now,updatedAt:now});
   b.set(ref.collection("private").doc("authority"),{values:priv,updatedAt:now});
+  var isNew=!draft.id,vals=pub;
   b.commit().then(function(){
+    if(isNew)notifyAdmin(id,vals,draft.category);
     if(!draft.id)lsDel(draftKey());
     draft=null;location.hash="p/"+id;
   }).catch(function(e){
@@ -650,6 +664,71 @@ window.publish=function(){
     var m=document.createElement("div");m.className="notice";m.textContent="Kaydedilemedi: "+errTr(e);btn.parentNode.appendChild(m);
   });
 };
+
+/* ---------- admin notification (picked up by the Firebase "Trigger Email" extension) ---------- */
+function notifyAdmin(id,v,cat){
+  try{
+    var url=passportUrl(v,id),co=(profile&&profile.company)||"",un=(profile&&profile.username)||"";
+    var rows=[["Firma",co],["Kullanıcı",un+" ("+me.email+")"],["Ürün",v.product_name],["Marka",v.brand],["SKU",v.sku],
+      ["Kategori",(CATS[cat]||{}).label||cat],["GTIN",v.gtin||"—"],["Pasaport",url]];
+    var html='<p>Commited Pasaport üzerinde yeni bir ürün pasaportu oluşturuldu.</p><table cellpadding="6" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">'
+      +rows.map(function(r){return '<tr><td style="color:#5C6B63">'+esc(r[0])+'</td><td><b>'+(r[0]==="Pasaport"?'<a href="'+esc(r[1])+'">'+esc(r[1])+'</a>':esc(r[1]||""))+'</b></td></tr>'}).join("")
+      +'</table><p style="color:#5C6B63;font-size:12px">Admin paneli: '+esc(location.origin+location.pathname)+'#admin</p>';
+    fs.collection("mail").add({to:[ADMIN_EMAIL],message:{subject:"Yeni ürün pasaportu: "+(v.product_name||"")+(co?" — "+co:""),html:html},
+      passportId:id,ownerUid:me.uid,createdAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(function(){});
+  }catch(e){}
+}
+
+/* ---------- admin dashboard ---------- */
+var adminTab="passports";
+function fmtDate(t){var d=t&&t.toDate?t.toDate():null;return d?d.toLocaleDateString("tr-TR")+" "+d.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}):"—";}
+function renderAdmin(){
+  if(!isAdminEmail()){app.innerHTML='<div class="empty">Bu sayfa yalnızca Commited yöneticisine açıktır.</div>';return;}
+  if(!me.emailVerified){
+    app.innerHTML=head("Admin paneli","Güvenlik için önce e-posta adresinizi doğrulamanız gerekiyor.")
+      +'<div class="section"><p style="margin:0 0 12px">'+esc(me.email)+' adresine bir doğrulama bağlantısı gönderelim. Bağlantıya tıkladıktan sonra çıkış yapıp tekrar giriş yapın.</p>'
+      +'<button class="btn primary" id="vfBtn">Doğrulama e-postası gönder</button> <span class="hint" id="vfMsg"></span></div>';
+    document.getElementById("vfBtn").onclick=function(){var b=this;b.disabled=true;auth.languageCode="tr";
+      me.sendEmailVerification().then(function(){document.getElementById("vfMsg").textContent="Gönderildi — gelen kutunuzu kontrol edin.";})
+        .catch(function(e){b.disabled=false;document.getElementById("vfMsg").textContent=errTr(e);});};
+    return;
+  }
+  loading("Admin verileri yükleniyor…");
+  Promise.all([fs.collection("passports").get(),fs.collection("users").get()]).then(function(r){
+    var ps=r[0].docs.map(function(d){return{id:d.id,p:d.data()}}),us=r[1].docs.map(function(d){return{id:d.id,u:d.data()}});
+    ps.sort(function(a,b){return ts(b.p.createdAt)-ts(a.p.createdAt)});us.sort(function(a,b){return ts(b.u.createdAt)-ts(a.u.createdAt)});
+    var byOwner={};ps.forEach(function(x){byOwner[x.p.ownerUid]=(byOwner[x.p.ownerUid]||0)+1;});
+    var week=Date.now()-7*864e5,newP=ps.filter(function(x){return ts(x.p.createdAt)>=week}).length,newU=us.filter(function(x){return ts(x.u.createdAt)>=week}).length;
+    var tex=ps.filter(function(x){return x.p.category==="TEXTILE"}).length,gt=ps.filter(function(x){return x.p.values&&x.p.values.gtin}).length;
+    var userName={};us.forEach(function(x){userName[x.id]=x.u.company||x.u.username||x.u.email;});
+    function paint(){
+      var q=((document.getElementById("aq")||{}).value||"").toLocaleLowerCase("tr");
+      var h=head("Admin paneli","Tüm üreticiler ve pasaportlar · yalnızca "+ADMIN_EMAIL)
+        +'<div class="facts">'+fact("Üretici",us.length)+fact("Pasaport",ps.length)+fact("Son 7 gün · pasaport",newP)+fact("Son 7 gün · üretici",newU)
+        +fact("Tekstil / Elektronik",tex+" / "+(ps.length-tex))+fact("GTIN'li",gt)+'</div>'
+        +'<div class="tabs"><button class="'+(adminTab==="passports"?"on":"")+'" onclick="setAdminTab(\'passports\')">Pasaportlar</button>'
+        +'<button class="'+(adminTab==="users"?"on":"")+'" onclick="setAdminTab(\'users\')">Üreticiler</button>'
+        +'<span style="flex:1"></span><input type="search" id="aq" class="search" placeholder="Ara…" value="'+esc(q)+'"></div>';
+      if(adminTab==="passports"){
+        var f=ps.filter(function(x){var v=x.p.values||{};return !q||[v.product_name,v.brand,v.sku,v.gtin,x.p.company,userName[x.p.ownerUid]].join(" ").toLocaleLowerCase("tr").indexOf(q)>=0;});
+        h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ürün</th><th>Marka / SKU</th><th>Üretici</th><th>Kategori</th><th>GTIN</th><th>Oluşturma</th><th>Güncelleme</th></tr></thead><tbody>'
+          +(f.length?f.map(function(x){var v=x.p.values||{};return '<tr><td><a href="#p/'+esc(x.id)+'">'+esc(v.product_name||"(adsız)")+'</a></td><td>'+esc(v.brand||"")+(v.sku?'<br><span class="slug">'+esc(v.sku)+'</span>':'')+'</td><td>'+esc(x.p.company||userName[x.p.ownerUid]||"—")+'</td><td>'+esc((CATS[x.p.category]||{}).label||x.p.category)+'</td><td class="mono">'+esc(v.gtin||"—")+'</td><td>'+fmtDate(x.p.createdAt)+'</td><td>'+fmtDate(x.p.updatedAt)+'</td></tr>'}).join(""):'<tr><td colspan="7" class="hint">Kayıt yok.</td></tr>')
+          +'</tbody></table></div>';
+      }else{
+        var g=us.filter(function(x){return !q||[x.u.company,x.u.username,x.u.email].join(" ").toLocaleLowerCase("tr").indexOf(q)>=0;});
+        h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Firma</th><th>Kullanıcı adı</th><th>E-posta</th><th>Pasaport</th><th>Kayıt</th></tr></thead><tbody>'
+          +(g.length?g.map(function(x){return '<tr><td>'+esc(x.u.company||"—")+'</td><td>'+esc(x.u.username||"")+'</td><td><a href="mailto:'+esc(x.u.email||"")+'">'+esc(x.u.email||"")+'</a></td><td>'+(byOwner[x.id]||0)+'</td><td>'+fmtDate(x.u.createdAt)+'</td></tr>'}).join(""):'<tr><td colspan="5" class="hint">Kayıt yok.</td></tr>')
+          +'</tbody></table></div>';
+      }
+      app.innerHTML=h;
+      var aq=document.getElementById("aq");aq.oninput=function(){var pos=aq.selectionStart;paint();var n=document.getElementById("aq");n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}};
+    }
+    window.setAdminTab=function(t){adminTab=t;paint();};
+    paint();
+  }).catch(function(e){
+    app.innerHTML=head("Admin paneli","")+'<div class="notice">Veriler okunamadı: '+esc(errTr(e))+'<br>Firestore güvenlik kurallarında yönetici okuma izni tanımlı olmalı.</div>';
+  });
+}
 
 /* ---------- public passport ---------- */
 var showAuth=false,curP=null,curId=null,showLabel=false,showJson=false,labelSize="s70",labelLang=null,lastPub=null;
