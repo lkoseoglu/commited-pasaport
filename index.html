@@ -266,7 +266,19 @@ var TEXTILE=[
  {title:"Karbon ön hesaplama girdileri",fields:[
    {c:"elec_kwh",l:"Ürün başına elektrik",t:"NUMBER",u:"kWh",a:"AUTHORITY",note:"Aylık elektrik tüketimi ÷ aylık üretim adedi (iplik, dokuma, boyama, konfeksiyon dahil)"},
    {c:"gas_kwh",l:"Ürün başına doğalgaz",t:"NUMBER",u:"kWh",a:"AUTHORITY",note:"Faturadaki kWh ÷ aylık üretim adedi"},
-   {c:"waste_pct",l:"Üretim firesi",t:"NUMBER",u:"%",a:"AUTHORITY",note:"Kesim ve üretim kaybı; bilinmiyorsa boş bırakın"}]}
+   {c:"waste_pct",l:"Üretim firesi",t:"NUMBER",u:"%",a:"AUTHORITY",note:"Kesim ve üretim kaybı; bilinmiyorsa boş bırakın"}]},
+ {title:"Detaylı karbon hesabı (isteğe bağlı)",fields:[
+   {c:"month_units",l:"Aylık üretim adedi",t:"NUMBER",u:"adet",a:"AUTHORITY",note:"Ürün başına değeri bilmiyorsanız: aylık toplamları girin, sistem ürün başına böler"},
+   {c:"month_elec_kwh",l:"Aylık elektrik tüketimi",t:"NUMBER",u:"kWh",a:"AUTHORITY",note:"Elektrik faturasındaki toplam; yukarıda ürün başına değer girildiyse o kullanılır"},
+   {c:"month_gas_kwh",l:"Aylık doğalgaz tüketimi",t:"NUMBER",u:"kWh",a:"AUTHORITY",note:"Faturadaki kWh; m³ biliyorsanız yaklaşık 10,6 ile çarpın"},
+   {c:"month_diesel_l",l:"Aylık motorin (jeneratör, forklift, servis)",t:"NUMBER",u:"L",a:"AUTHORITY"},
+   {c:"month_lpg_kg",l:"Aylık LPG",t:"NUMBER",u:"kg",a:"AUTHORITY"},
+   {c:"month_coal_kg",l:"Aylık kömür (buhar kazanı)",t:"NUMBER",u:"kg",a:"AUTHORITY"},
+   {c:"month_fueloil_kg",l:"Aylık fuel-oil",t:"NUMBER",u:"kg",a:"AUTHORITY"},
+   {c:"pack_board_g",l:"Ürün başına karton ambalaj",t:"NUMBER",u:"g",a:"AUTHORITY"},
+   {c:"pack_plastic_g",l:"Ürün başına plastik ambalaj (poşet, film)",t:"NUMBER",u:"g",a:"AUTHORITY"},
+   {c:"transport_legs",l:"Taşıma ayakları",t:"REP",a:"AUTHORITY",sub:[{c:"leg",l:"Güzergâh (ör. iplik → fabrika)"},{c:"mode",l:"Tür: kara / deniz / hava / tren"},{c:"km",l:"km",t:"NUMBER"}],note:"Hammaddenin fabrikaya ve ürünün müşteriye taşınması. Ağırlık olarak ürün + ambalaj kullanılır."},
+   {c:"supplier_steps",l:"Fason / tedarikçi aşamaları",t:"REP",a:"AUTHORITY",sub:[{c:"step",l:"Aşama (ör. fason boyahane)"},{c:"kg",l:"kgCO₂e / ürün",t:"NUMBER"}],note:"Tedarikçinizin size verdiği ürün başına değer. Bilmiyorsanız boş bırakın; o aşama hesapta eksik kalır."}]}
 ];
 var ELECTRONICS=[
  {title:"Malzeme",fields:[
@@ -324,7 +336,7 @@ var EXAMPLE={id:"ornek-havlu",category:"TEXTILE",example:true,values:{
 
 /* ---------- i18n (TR / EN) ---------- */
 var EN_F={product_name:"Product name",brand:"Brand",sku:"Model / SKU",photos:"Product photos",cert_docs:"Certificate documents",tech_docs:"Technical documents",gtin:"GTIN (barcode)",lot:"Batch / lot no",serial:"Serial no",weight_g:"Weight",color:"Colour",
- country_origin:"Country of origin",facility:"Manufacturing facility",carbon:"Carbon footprint (manufacturer declaration)",carbon_method:"Calculation method and scope",carbon_level:"Basis of the value",carbon_verifier:"Verification body",carbon_cert:"Verification statement",elec_kwh:"Electricity per product",gas_kwh:"Natural gas per product",waste_pct:"Production waste",
+ country_origin:"Country of origin",facility:"Manufacturing facility",carbon:"Carbon footprint (manufacturer declaration)",carbon_method:"Calculation method and scope",carbon_level:"Basis of the value",carbon_verifier:"Verification body",carbon_cert:"Verification statement",elec_kwh:"Electricity per product",gas_kwh:"Natural gas per product",waste_pct:"Production waste",month_units:"Monthly units produced",month_elec_kwh:"Monthly electricity use",month_gas_kwh:"Monthly natural gas use",month_diesel_l:"Monthly diesel (generator, forklift, shuttle)",month_lpg_kg:"Monthly LPG",month_coal_kg:"Monthly coal (steam boiler)",month_fueloil_kg:"Monthly fuel oil",pack_board_g:"Cardboard packaging per product",pack_plastic_g:"Plastic packaging per product (bag, film)",transport_legs:"Transport legs",supplier_steps:"Contract / supplier steps",
  care:"Care instructions",end_of_life:"Recycling / disposal",certificates:"Certificates",
  fiber_composition:"Fibre composition",recycled_content:"Recycled content",fabric_weight:"Fabric weight",
  reach:"REACH compliant",azo_free:"Free of azo dyes",svhc:"SVHC (>0.1%) note",
@@ -333,16 +345,16 @@ var EN_F={product_name:"Product name",brand:"Brand",sku:"Model / SKU",photos:"Pr
  energy_class:"Energy efficiency class",power_kwh_year:"Power consumption",repair_score:"Repairability score",
  spare_years:"Spare parts availability",sw_update_years:"Software update period",ce_mark:"CE marking",
  battery_passport:"Battery passport link",weee:"WEEE / recycling information"};
-var EN_U={"yıl":"years","kWh/yıl":"kWh/year","kgCO₂e / ürün":"kgCO₂e / product"};
+var EN_U={"adet":"units","yıl":"years","kWh/yıl":"kWh/year","kgCO₂e / ürün":"kgCO₂e / product"};
 var EN_S={"Kimlik":"Identity","Menşe":"Origin","Çevresel performans":"Environmental performance",
  "Kullanım ve yaşam sonu":"Use and end of life","Sertifikalar":"Certificates","Malzeme":"Materials",
  "Kimyasal güvenlik":"Chemical safety","Tedarik zinciri":"Supply chain","Dayanıklılık":"Durability",
  "Madde uyumu":"Substance compliance","Enerji":"Energy","Dayanıklılık ve onarım":"Durability and repair",
- "Güvenlik ve batarya":"Safety and battery","Yaşam sonu":"End of life","Teknik dosya":"Technical file","Karbon ön hesaplama girdileri":"Carbon pre-calculation inputs"};
-var EN_N={"Değeri siz beyan edersiniz; Commited bu değeri doğrulamaz. Seçtiğiniz dayanağa göre pasaportta güven seviyesi gösterilir.":"You declare this value; Commited does not verify it. The passport shows a confidence level based on the basis you choose.","ör. ISO 14067, cradle-to-gate, 2025 üretim verisi":"e.g. ISO 14067, cradle-to-gate, 2025 production data","Yalnızca üçüncü taraf doğrulamada: kuruluş adı ve rapor no":"Third-party verification only: body name and report no.","Üçüncü taraf doğrulama seçildiyse zorunlu · PDF · herkese açık":"Required if third-party verification is selected · PDF · public","Kendi hesapladığınız veya doğrulattığınız değer. Boş bırakırsanız pasaportta Commited ön hesaplaması (tahmini) gösterilir.":"Your own calculated or verified value. If left empty, the passport shows the Commited pre-calculation (estimate).","ör. ISO 14067, cradle-to-gate, üçüncü taraf doğrulamalı":"e.g. ISO 14067, cradle-to-gate, third-party verified","Aylık elektrik tüketimi ÷ aylık üretim adedi (iplik, dokuma, boyama, konfeksiyon dahil)":"Monthly electricity use ÷ monthly units produced (incl. spinning, weaving, dyeing, making)","Faturadaki kWh ÷ aylık üretim adedi":"kWh on the bill ÷ monthly units produced","Kesim ve üretim kaybı; bilinmiyorsa boş bırakın":"Cutting and production loss; leave empty if unknown","En fazla 3 fotoğraf · JPG, PNG veya WebP · dosya başına 10 MB":"Up to 3 photos · JPG, PNG or WebP · 10 MB per file","Sertifikaların PDF kopyaları · herkese açık":"PDF copies of certificates · public","Test raporları, REACH/SVHC beyanları, uygunluk beyanı · yalnızca siz ve yetkililer görür":"Test reports, REACH/SVHC declarations, declaration of conformity · visible only to you and authorities","Commited karbon motoru ile hesaplanır":"Calculated with the Commited carbon engine","ör. boyama, dikim":"e.g. dyeing, sewing",
+ "Güvenlik ve batarya":"Safety and battery","Yaşam sonu":"End of life","Teknik dosya":"Technical file","Karbon ön hesaplama girdileri":"Carbon pre-calculation inputs","Detaylı karbon hesabı (isteğe bağlı)":"Detailed carbon calculation (optional)"};
+var EN_N={"Ürün başına değeri bilmiyorsanız: aylık toplamları girin, sistem ürün başına böler":"If you don't know per-product values: enter monthly totals and the system divides by units","Elektrik faturasındaki toplam; yukarıda ürün başına değer girildiyse o kullanılır":"Total on the electricity bill; a per-product value above takes precedence","Faturadaki kWh; m³ biliyorsanız yaklaşık 10,6 ile çarpın":"kWh on the bill; if you know m³, multiply by about 10.6","Hammaddenin fabrikaya ve ürünün müşteriye taşınması. Ağırlık olarak ürün + ambalaj kullanılır.":"Raw material to factory and product to customer. Product + packaging weight is used.","Tedarikçinizin size verdiği ürün başına değer. Bilmiyorsanız boş bırakın; o aşama hesapta eksik kalır.":"Per-product value provided by your supplier. Leave empty if unknown; that step stays missing from the calculation.","Değeri siz beyan edersiniz; Commited bu değeri doğrulamaz. Seçtiğiniz dayanağa göre pasaportta güven seviyesi gösterilir.":"You declare this value; Commited does not verify it. The passport shows a confidence level based on the basis you choose.","ör. ISO 14067, cradle-to-gate, 2025 üretim verisi":"e.g. ISO 14067, cradle-to-gate, 2025 production data","Yalnızca üçüncü taraf doğrulamada: kuruluş adı ve rapor no":"Third-party verification only: body name and report no.","Üçüncü taraf doğrulama seçildiyse zorunlu · PDF · herkese açık":"Required if third-party verification is selected · PDF · public","Kendi hesapladığınız veya doğrulattığınız değer. Boş bırakırsanız pasaportta Commited ön hesaplaması (tahmini) gösterilir.":"Your own calculated or verified value. If left empty, the passport shows the Commited pre-calculation (estimate).","ör. ISO 14067, cradle-to-gate, üçüncü taraf doğrulamalı":"e.g. ISO 14067, cradle-to-gate, third-party verified","Aylık elektrik tüketimi ÷ aylık üretim adedi (iplik, dokuma, boyama, konfeksiyon dahil)":"Monthly electricity use ÷ monthly units produced (incl. spinning, weaving, dyeing, making)","Faturadaki kWh ÷ aylık üretim adedi":"kWh on the bill ÷ monthly units produced","Kesim ve üretim kaybı; bilinmiyorsa boş bırakın":"Cutting and production loss; leave empty if unknown","En fazla 3 fotoğraf · JPG, PNG veya WebP · dosya başına 10 MB":"Up to 3 photos · JPG, PNG or WebP · 10 MB per file","Sertifikaların PDF kopyaları · herkese açık":"PDF copies of certificates · public","Test raporları, REACH/SVHC beyanları, uygunluk beyanı · yalnızca siz ve yetkililer görür":"Test reports, REACH/SVHC declarations, declaration of conformity · visible only to you and authorities","Commited karbon motoru ile hesaplanır":"Calculated with the Commited carbon engine","ör. boyama, dikim":"e.g. dyeing, sewing",
  "GS1 Türkiye'den alınan 8, 12, 13 veya 14 haneli numara — kontrol hanesi doğrulanır":"8, 12, 13 or 14-digit number from GS1 — check digit is validated",
  "Parti düzeyinde pasaport için (GS1 AI 10)":"For batch-level passports (GS1 AI 10)","Tekil ürün düzeyinde pasaport için (GS1 AI 21)":"For item-level passports (GS1 AI 21)"};
-var EN_SUB={"Tür (ör. GOTS)":"Type (e.g. GOTS)","Lif":"Fibre","Malzeme":"Material","Tedarikçi":"Supplier"};
+var EN_SUB={"Güzergâh (ör. iplik → fabrika)":"Route (e.g. yarn → factory)","Tür: kara / deniz / hava / tren":"Mode: road / sea / air / rail","Aşama (ör. fason boyahane)":"Step (e.g. contract dyehouse)","kgCO₂e / ürün":"kgCO₂e / product","Tür (ör. GOTS)":"Type (e.g. GOTS)","Lif":"Fibre","Malzeme":"Material","Tedarikçi":"Supplier"};
 var UI={
  tr:{cat_TEXTILE:"Tekstil",cat_ELECTRONICS:"Elektronik",desc_TEXTILE:"Hazır giyim, ev tekstili, aksesuar",desc_ELECTRONICS:"Tüketici elektroniği, cihazlar",
   sub_brand:"Dijital Ürün Pasaportu",dpp:"Dijital Ürün Pasaportu",
@@ -362,6 +374,9 @@ var UI={
   est_need_w:"Ağırlık girilmeli",est_need_f:"Lif kompozisyonu girilmeli",est_sum:"Lif oranları toplamı %100 olmalı",est_nofactor:"Bu lif için kaynaklı faktör yok",
   est_noenergy:"Üretim enerjisi girilmedi; toplam yalnızca lif aşamasını içerir.",est_none:"Ön hesaplama için eksik veri:",est_src:"Kaynaklar",est_recy:"Geri dönüştürülmüş lifler için ihtiyatlı olarak birincil lif faktörü kullanılır.",
   est_live:"Girdikçe güncellenir. Pasaportta, üretici beyanı yoksa bu değer \"tahmini\" etiketiyle gösterilir.",carbon_t:"Karbon ayak izi",method:"Yöntem",
+  est_fuel:"Diğer yakıtlar (motorin, LPG, kömür, fuel-oil)",est_supp:"Fason / tedarikçi aşamaları",est_pack:"Ambalaj",est_trans:"Taşıma",
+  est_scope2:"Kapsam: lif üretimi + üretim enerjisi ve yakıtları + girilen tedarikçi aşamaları, ambalaj ve taşıma ayakları. Kullanım ve yaşam sonu dahil değildir.",
+  est_badmode:"Taşıma türü tanınmadı (kara / deniz / hava / tren yazın)",
   lv_pick:"Seçin…",lv_declared:"Firma beyanı (yöntem belgelenmemiş)",lv_calculated:"Firma hesabı – standart yöntemle (ISO 14067 / PEF / GHG Protocol), doğrulanmamış",lv_verified:"Üçüncü taraf doğrulamalı (akredite kuruluş, ISO 14067 / ISO 14064-3)",
   lvs_declared:"Firma beyanı",lvs_calculated:"Firma hesabı, doğrulanmamış",lvs_verified:"Üçüncü taraf doğrulamalı",lvs_estimate:"Commited ön hesaplaması",
   lv_conf:"Güven seviyesi",lv_disc:"Bu değer firma tarafından beyan edilmiştir. Commited tarafından doğrulanmamıştır.",lv_vdisc:"Doğrulama belgesi firma tarafından yüklenmiştir; Commited belgenin içeriğini onaylamaz.",
@@ -389,6 +404,9 @@ var UI={
   est_need_w:"Weight is required",est_need_f:"Fibre composition is required",est_sum:"Fibre shares must add up to 100%",est_nofactor:"No sourced factor for this fibre",
   est_noenergy:"Production energy not entered; the total covers the fibre stage only.",est_none:"Missing data for the pre-calculation:",est_src:"Sources",est_recy:"For recycled fibres the virgin fibre factor is used as a conservative assumption.",
   est_live:"Updates as you type. If there is no manufacturer declaration, the passport shows this value labelled \"estimate\".",carbon_t:"Carbon footprint",method:"Method",
+  est_fuel:"Other fuels (diesel, LPG, coal, fuel oil)",est_supp:"Contract / supplier steps",est_pack:"Packaging",est_trans:"Transport",
+  est_scope2:"Scope: fibre production + production energy and fuels + entered supplier steps, packaging and transport legs. Use and end of life are excluded.",
+  est_badmode:"Transport mode not recognised (enter road / sea / air / rail)",
   lv_pick:"Select…",lv_declared:"Company declaration (method not documented)",lv_calculated:"Company calculation – standard method (ISO 14067 / PEF / GHG Protocol), not verified",lv_verified:"Third-party verified (accredited body, ISO 14067 / ISO 14064-3)",
   lvs_declared:"Company declaration",lvs_calculated:"Company calculation, not verified",lvs_verified:"Third-party verified",lvs_estimate:"Commited pre-calculation",
   lv_conf:"Confidence level",lv_disc:"This value is declared by the company. It has not been verified by Commited.",lv_vdisc:"The verification statement was uploaded by the company; Commited does not endorse its content.",
@@ -643,7 +661,7 @@ function paintForm(){
     html+='<div class="section"><h3>'+esc(SL(s.title))+'</h3>';
     s.fields.forEach(function(f){html+=renderField(f,v[f.c]);});
     html+='</div>';
-    if(s.title==="Karbon ön hesaplama girdileri")html+='<div class="section" id="estBox"></div>';
+    if(s.title==="Detaylı karbon hesabı (isteğe bağlı)")html+='<div class="section" id="estBox"></div>';
   });
   html+='<div class="publishbar"><div class="progress"><div class="bar"><i id="pbar"></i></div><small id="ptext"></small></div>'
     +'<button class="btn primary" id="pubBtn" onclick="publish()">'+(draft.id?"Değişiklikleri kaydet":"Yayınla ve QR oluştur")+'</button></div>';
@@ -726,7 +744,7 @@ window.publish=function(){
   if(uploadsBusy>0){alert(T("wait_up"));return;}
   var pub={},priv={};
   var est=estimateCarbon(draft.category,draft.values);
-  if(est&&est.ok)pub.carbon_est={ver:est.ver,mat:est.mat,elec:est.elec,gas:est.gas,total:est.total,partial:est.partial};
+  if(est&&est.ok)pub.carbon_est={ver:est.ver,mat:est.mat,elec:est.elec,gas:est.gas,fuel:est.fuel,pack:est.pack,trans:est.trans,supp:est.supp,total:est.total,partial:est.partial};
   defs.forEach(function(f){var dst=(f.a==="AUTHORITY"?priv:pub);
     var x=cleanVal(draft.values[f.c]);if(x!==undefined)dst[f.c]=x;
     if(f.t==="LONG"){var y=cleanVal(draft.values[f.c+"_en"]);if(y!==undefined)dst[f.c+"_en"]=y;}});
@@ -756,17 +774,22 @@ function lvLine(l){return '<div class="row"><span class="k">'+T("lv_conf")+'</sp
 function paintLv(){var w=document.getElementById("lvWarn");if(!w||!draft)return;var v=draft.values;
   w.textContent=(v.carbon_level==="verified"&&!((v.carbon_cert||[]).length))?T("lv_down"):"";}
 /* ---------- Commited carbon pre-calculation (textile, cradle-to-gate) ---------- */
-var EST_VER="CM-TX-1 (2026-10)";
+var EST_VER="CM-TX-1.1 (2026-10)";
 var FIBER_EF=[ // kg CO2e / kg staple fibre; Forfora et al. 2026, Sustainability 18(8):4070, Ecoinvent 3.10
   {k:"cotton",re:/pamuk|cotton/i,ef:2.8},
   {k:"polyester",re:/poly?es[tl]er|poliester|\bpes\b|\bpet\b/i,ef:3.1},
   {k:"lyocell",re:/lyocell|tencel/i,ef:6.1},
   {k:"viscose",re:/vis[kc]o[nsz]|viscose|rayon/i,ef:5.9}];
 var EF_ELEC=0.478, EF_GAS=0.202;
+var EF_FUEL={diesel:2.68,lpg:2.985,coal:2.441,fueloil:3.127}; // kg CO2 per L (diesel) or per kg; IPCC 2006 defaults
+var EF_PACK={board:1.200,plastic:2.965}; // kg CO2e/kg; UK Gov GHG conversion factors 2025, material use, primary production
+var EF_TR=[{k:"road",re:/kara|road|t[ıi]r|kamyon|truck/i,ef:0.107},{k:"sea",re:/deniz|sea|gemi|ship|konteyner/i,ef:0.00365},{k:"air",re:/hava|air|u[çc]ak/i,ef:0.608},{k:"rail",re:/tren|rail|demir/i,ef:0.0307}]; // kg CO2e / tonne-km
 var EST_SRC=[
   "Forfora N. et al. (2026) A Comparative Life Cycle Assessment of T-Shirt Production… Sustainability 18(8):4070, doi:10.3390/su18084070 — fibre production factors (Ecoinvent 3.10): cotton 2.8, polyester 3.1, viscose 5.9, lyocell 6.1 kg CO2e/kg",
   "T.C. Enerji ve Tabii Kaynaklar Bakanlığı (2022) Türkiye elektrik tüketim noktası emisyon faktörü — distribution grid 0.478 tCO2e/MWh",
-  "IPCC (2006) Guidelines for National GHG Inventories, Vol. 2 Ch. 2 — natural gas 56,100 kg CO2/TJ (≈0.202 kg CO2/kWh)"];
+  "IPCC (2006) Guidelines for National GHG Inventories, Vol. 2 Ch. 2 — natural gas 56,100 kg CO2/TJ (≈0.202 kg CO2/kWh); diesel 74,100 kg CO2/TJ (≈2.68 kg CO2/L); LPG 63,100 kg CO2/TJ (≈2.985 kg/kg); other bituminous coal 94,600 kg CO2/TJ (≈2.441 kg/kg); residual fuel oil 77,400 kg CO2/TJ (≈3.127 kg/kg)",
+  "UK Government (DESNZ/Defra) Greenhouse gas reporting: conversion factors 2025 — material use, primary production: board 1,200 kg CO2e/t; LDPE/LLDPE incl. forming 2,965 kg CO2e/t; sea freight container ship (average) 0.00365 kg CO2e/tonne-km",
+  "Smart Freight Centre, GLEC Framework v3.2 (2023) default intensities, well-to-wheel — road articulated HDV 0.107, air freighter long-haul 0.608, rail diesel EU 0.0307 kg CO2e/tonne-km"];
 function num(x){var n=parseFloat(String(x==null?"":x).replace(",","."));return isFinite(n)?n:null;}
 function estimateCarbon(cat,v){
   if(cat!=="TEXTILE")return null;
@@ -783,12 +806,28 @@ function estimateCarbon(cat,v){
     mat+=(num(x.pct)||0)/100*massKg*m.ef;});
   if(r.missingFibres.length)r.issues.push("est_nofactor");
   if(r.issues.length)return r;
+  var units=num(v.month_units);if(!(units>0))units=null;
+  function perU(c){var x=num(v[c]);return (units&&x!=null&&x>=0)?x/units:null;}
   var ek=num(v.elec_kwh),gk=num(v.gas_kwh);
+  if(!(ek!=null&&ek>=0))ek=perU("month_elec_kwh");
+  if(!(gk!=null&&gk>=0))gk=perU("month_gas_kwh");
   var e=(ek!=null&&ek>=0)?ek*EF_ELEC:null,g=(gk!=null&&gk>=0)?gk*EF_GAS:null;
+  var fu=null;[["month_diesel_l","diesel"],["month_lpg_kg","lpg"],["month_coal_kg","coal"],["month_fueloil_kg","fueloil"]].forEach(function(p){var q=perU(p[0]);if(q!=null)fu=(fu||0)+q*EF_FUEL[p[1]];});
+  var pb=num(v.pack_board_g),pp=num(v.pack_plastic_g),pk=null;
+  if(pb!=null&&pb>=0)pk=(pk||0)+pb/1000*EF_PACK.board;
+  if(pp!=null&&pp>=0)pk=(pk||0)+pp/1000*EF_PACK.plastic;
+  var tonnes=((w||0)+(pb>0?pb:0)+(pp>0?pp:0))/1e6,tr=null;r.badModes=[];
+  (v.transport_legs||[]).forEach(function(x){if(!x)return;var km=num(x.km);if(!(km>0))return;
+    var m=EF_TR.filter(function(f){return f.re.test(x.mode||"")})[0];
+    if(!m){r.badModes.push(x.mode||x.leg||"?");return;}
+    tr=(tr||0)+tonnes*km*m.ef;});
+  var sp=null;(v.supplier_steps||[]).forEach(function(x){var k=x&&num(x.kg);if(k!=null&&k>=0)sp=(sp||0)+k;});
   function rnd(x,d){var p=Math.pow(10,d);return Math.round(x*p+1e-9)/p;}
-  r.mat=rnd(mat,3);r.elec=e==null?null:rnd(e,3);r.gas=g==null?null:rnd(g,3);
+  function rn(x){return x==null?null:rnd(x,3);}
+  r.mat=rnd(mat,3);r.elec=rn(e);r.gas=rn(g);r.fuel=rn(fu);r.pack=rn(pk);r.trans=rn(tr);r.supp=rn(sp);
+  r.perUnitFromMonth=!!units;
   r.partial=(e==null&&g==null);
-  r.total=rnd(mat+(e||0)+(g||0),2);
+  r.total=rnd(mat+(e||0)+(g||0)+(fu||0)+(pk||0)+(tr||0)+(sp||0),2);
   r.ok=true;return r;
 }
 function fmtKg(n){return (Math.round(n*100)/100).toLocaleString(LANG==="en"?"en-GB":"tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -803,9 +842,12 @@ function estHtml(r,showSources){
   h+='<div class="row"><span class="k">'+T("est_mat")+'</span><span class="v mono">'+fmtKg(r.mat)+' kgCO₂e</span></div>';
   if(r.elec!=null)h+='<div class="row"><span class="k">'+T("est_elec")+'</span><span class="v mono">'+fmtKg(r.elec)+' kgCO₂e</span></div>';
   if(r.gas!=null)h+='<div class="row"><span class="k">'+T("est_gas")+'</span><span class="v mono">'+fmtKg(r.gas)+' kgCO₂e</span></div>';
+  [["fuel","est_fuel"],["supp","est_supp"],["pack","est_pack"],["trans","est_trans"]].forEach(function(p){if(r[p[0]]!=null)h+='<div class="row"><span class="k">'+T(p[1])+'</span><span class="v mono">'+fmtKg(r[p[0]])+' kgCO₂e</span></div>';});
   h+='<div class="row"><span class="k"><b>'+T("est_total")+'</b></span><span class="v mono"><b>'+fmtKg(r.total)+' kgCO₂e</b></span></div>';
   if(r.partial)h+='<div class="hint" style="margin-top:6px">'+T("est_noenergy")+'</div>';
-  h+='<div class="hint" style="margin-top:8px">'+T("est_scope")+' '+T("est_recy")+'</div>'
+  if(r.badModes&&r.badModes.length)h+='<div class="hint" style="margin-top:6px">'+T("est_badmode")+': '+esc(r.badModes.join(", "))+'</div>';
+  var ext=(r.pack!=null||r.trans!=null||r.supp!=null||r.fuel!=null);
+  h+='<div class="hint" style="margin-top:8px">'+T(ext?"est_scope2":"est_scope")+' '+T("est_recy")+'</div>'
     +'<div class="hint" style="margin-top:4px"><b>'+T("est_disc")+'</b></div>';
   if(showSources)h+='<details style="margin-top:8px"><summary class="hint" style="cursor:pointer">'+T("est_src")+' · '+esc(r.ver||EST_VER)+'</summary><ol class="hint" style="margin:6px 0 0 18px;padding:0">'
     +EST_SRC.map(function(x){return '<li>'+esc(x)+'</li>'}).join("")+'</ol></details>';
