@@ -272,8 +272,9 @@ firebase.initializeApp({
   appId:"1:284797252392:web:e195af964fc981c5d6d61d"
 });
 var auth=firebase.auth(), fs=firebase.firestore();
-var ADMIN_EMAIL="commitedapp@gmail.com";
-function isAdminEmail(){return !!(me&&me.email&&me.email.toLowerCase()===ADMIN_EMAIL);}
+var ADMIN_EMAIL="commitedapp@gmail.com"; // bildirimlerin gittigi adres
+var ADMIN_EMAILS=["commitedapp@gmail.com","levent.koseoglu@commited.app"]; // admin paneline girebilenler
+function isAdminEmail(){return !!(me&&me.email&&ADMIN_EMAILS.indexOf(me.email.toLowerCase())>=0);}
 function isAdmin(){return isAdminEmail()&&me.emailVerified;}
 var me=null, profile=null, authReady=false;
 
@@ -703,7 +704,7 @@ function renderAdmin(){
     var userName={};us.forEach(function(x){userName[x.id]=x.u.company||x.u.username||x.u.email;});
     function paint(){
       var q=((document.getElementById("aq")||{}).value||"").toLocaleLowerCase("tr");
-      var h=head("Admin paneli","Tüm üreticiler ve pasaportlar · yalnızca "+ADMIN_EMAIL)
+      var h=head("Admin paneli","Tüm üreticiler ve pasaportlar · yalnızca Commited yöneticileri")
         +'<div class="facts">'+fact("Üretici",us.length)+fact("Pasaport",ps.length)+fact("Son 7 gün · pasaport",newP)+fact("Son 7 gün · üretici",newU)
         +fact("Tekstil / Elektronik",tex+" / "+(ps.length-tex))+fact("GTIN'li",gt)+'</div>'
         +'<div class="tabs"><button class="'+(adminTab==="passports"?"on":"")+'" onclick="setAdminTab(\'passports\')">Pasaportlar</button>'
