@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Commited yoneticisi: dogrulanmis commitedapp@gmail.com hesabi
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'commitedapp@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    // kullanici adi -> uid/e-posta eslemesi (giris icin)
+    match /usernames/{name} {
+      allow get: if true;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && name.matches('^[a-z0-9._-]{3,30}$');
+      allow update, delete: if false;
+    }
+
+    // uretici profili: kendisi yazar; kendisi ve yonetici okur
+    match /users/{uid} {
+      allow read: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // pasaport: herkese acik alanlar QR ile okunabilir, yalnizca sahibi yazar; yonetici tumunu listeler
+    match /passports/{id} {
+      allow get: if true;
+      allow list: if isAdmin() || (request.auth != null && resource.data.ownerUid == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if request.auth != null && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+
+      // otorite alanlari: pasaport sahibi ve yonetici okur
+      match /private/{doc} {
+        allow read: if isAdmin() || (request.auth != null
+          && get(/databases/$(database)/documents/passports/$(id)).data.ownerUid == request.auth.uid);
+        allow delete: if request.auth != null
+          && get(/databases/$(database)/documents/passports/$(id)).data.ownerUid == request.auth.uid;
+        allow create, update: if request.auth != null
+          && getAfter(/databases/$(database)/documents/passports/$(id)).data.ownerUid == request.auth.uid;
+      }
+    }
+
+    // yeni pasaport bildirimi: "Trigger Email" eklentisi bu koleksiyonu okuyup e-posta gonderir.
+    // Uyeler yalnizca yoneticiye giden, kendi adlarina bir kayit olusturabilir; okuma sadece yonetici.
+    match /mail/{mid} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.to == ['commitedapp@gmail.com'];
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+  }
+}
