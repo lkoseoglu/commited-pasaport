@@ -1,0 +1,42 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Commited yoneticileri (Firestore kurallariyla ayni liste)
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in ['commitedapp@gmail.com', 'levent.koseoglu@commited.app']
+        && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // en fazla 10 MB; yalnizca resim (jpg/png/webp) ve PDF
+    function validUpload() {
+      return request.resource != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)|application/pdf');
+    }
+
+    // Herkese acik dosyalar: urun fotograflari, sertifika belgeleri (QR ile herkes gorur)
+    match /uploads/{uid}/{pid}/public/{file} {
+      allow read: if true;
+      allow create, update: if isOwner(uid) && validUpload();
+      allow delete: if isOwner(uid);
+    }
+
+    // Otorite dosyalari: teknik belgeler, test raporlari (yalnizca sahibi ve yonetici)
+    match /uploads/{uid}/{pid}/private/{file} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update: if isOwner(uid) && validUpload();
+      allow delete: if isOwner(uid);
+    }
+
+    // geri kalan her sey kapali
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
