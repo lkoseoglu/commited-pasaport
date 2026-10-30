@@ -139,16 +139,49 @@ main{padding-block:22px 64px}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition:none!important}}
 @media (max-width:480px){.userbar .who{display:none}}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden}
+.lang button{font-family:var(--mono);font-size:12px;font-weight:600;border:none;background:var(--surface);color:var(--muted);padding:0 10px;height:34px;cursor:pointer}
+.lang button.on{background:var(--accent);color:var(--accent-ink)}
+.label-panel{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.label-panel h3{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.label-opts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.label-opts button{font-family:inherit;font-size:13px;font-weight:600;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);border-radius:var(--radius-sm);padding:7px 12px;cursor:pointer}
+.label-opts button.on{border-color:var(--accent);background:var(--public-bg)}
+.label-stage{background:var(--surface-2);border-radius:var(--radius-sm);padding:18px;display:grid;place-items:center;overflow:auto}
+.dpp-label{background:#fff;color:#111;border:1px dashed #9aa59f;font-family:var(--sans);display:flex;gap:3mm;align-items:center;padding:2.5mm;box-sizing:border-box}
+.dpp-label .lq{flex:0 0 auto;display:grid;place-items:center}
+.dpp-label .lq img,.dpp-label .lq canvas{display:block;width:100%!important;height:auto!important}
+.dpp-label .lt{flex:1;min-width:0;display:flex;flex-direction:column;gap:.6mm;line-height:1.15}
+.dpp-label .l-ey{font-size:5.5pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#0F6E4E}
+.dpp-label .l-nm{font-weight:700;overflow-wrap:anywhere}
+.dpp-label .l-br{color:#444}
+.dpp-label .l-co{font-family:var(--mono);font-weight:600;color:#0F6E4E}
+.dpp-label .l-sc{color:#333}
+.dpp-label .l-hri{font-family:var(--mono);font-size:5pt;color:#111;overflow-wrap:anywhere}
+.dpp-label .l-ft{font-size:5pt;color:#666;margin-top:auto}
+.dpp-label.s50{width:50mm;height:30mm}.dpp-label.s50 .lq{width:24mm}.dpp-label.s50 .l-nm{font-size:7pt}.dpp-label.s50 .l-br,.dpp-label.s50 .l-co,.dpp-label.s50 .l-sc{font-size:5.5pt}
+.dpp-label.s70{width:70mm;height:40mm}.dpp-label.s70 .lq{width:33mm}.dpp-label.s70 .l-nm{font-size:9pt}.dpp-label.s70 .l-br,.dpp-label.s70 .l-co,.dpp-label.s70 .l-sc{font-size:6.5pt}.dpp-label.s70 .l-hri{font-size:6pt}
+.dpp-label.s100{width:100mm;height:60mm;padding:4mm;gap:5mm}.dpp-label.s100 .lq{width:50mm}.dpp-label.s100 .l-ey{font-size:7pt}.dpp-label.s100 .l-nm{font-size:13pt}.dpp-label.s100 .l-br,.dpp-label.s100 .l-co,.dpp-label.s100 .l-sc{font-size:8.5pt}.dpp-label.s100 .l-hri{font-size:8pt}.dpp-label.s100 .l-ft{font-size:6pt}
+.jsonbox{width:100%;min-height:220px;font-family:var(--mono);font-size:12px;padding:10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--fg)}
+@media print{
+  @page{margin:8mm}
+  body.printing{background:#fff!important}
+  body.printing *{visibility:hidden}
+  body.printing #printArea,body.printing #printArea *{visibility:visible}
+  body.printing #printArea{position:absolute;left:0;top:0}
+  body.printing .dpp-label{border:.2mm solid #bbb}
+}
 </style>
 </head>
 <body>
 <div class="topbar"><div class="wrap">
   <div class="brand" onclick="location.hash=''">
     <span class="dot">C</span>
-    <span>Commited Pasaport<small>Dijital Ürün Pasaportu</small></span>
+    <span>Commited Pasaport<small id="brandSub">Dijital Ürün Pasaportu</small></span>
   </div>
   <span class="spacer"></span>
   <div class="userbar" id="userbar"></div>
+  <div class="lang" role="group" aria-label="Dil / Language"><button id="lTR" onclick="setLang('tr')">TR</button><button id="lEN" onclick="setLang('en')">EN</button></div>
   <button class="theme-btn" id="themeBtn" title="Tema" aria-label="Tema değiştir">◐</button>
 </div></div>
 <main><div class="wrap" id="app"><div style="padding:60px 0;text-align:center;color:var(--muted)">Yükleniyor…</div></div></main>
@@ -160,6 +193,9 @@ var COMMON=[
    {c:"product_name",l:"Ürün adı",t:"TEXT",r:1,a:"PUBLIC"},
    {c:"brand",l:"Marka",t:"TEXT",r:1,a:"PUBLIC"},
    {c:"sku",l:"Model / SKU",t:"TEXT",r:1,a:"PUBLIC"},
+   {c:"gtin",l:"GTIN (barkod)",t:"TEXT",a:"PUBLIC",note:"GS1 Türkiye'den alınan 8, 12, 13 veya 14 haneli numara — kontrol hanesi doğrulanır"},
+   {c:"lot",l:"Parti / lot no",t:"TEXT",a:"PUBLIC",note:"Parti düzeyinde pasaport için (GS1 AI 10)"},
+   {c:"serial",l:"Seri no",t:"TEXT",a:"PUBLIC",note:"Tekil ürün düzeyinde pasaport için (GS1 AI 21)"},
    {c:"weight_g",l:"Ağırlık",t:"NUMBER",u:"g",a:"PUBLIC"},
    {c:"color",l:"Renk",t:"TEXT",a:"PUBLIC"}]},
  {title:"Menşe",fields:[
@@ -232,13 +268,95 @@ var me=null, profile=null, authReady=false;
 
 /* ---------- example passport (sample data, static) ---------- */
 var EXAMPLE={id:"ornek-havlu",category:"TEXTILE",example:true,values:{
-  product_name:"Örnek Pamuklu Havlu 50×90",brand:"Örnek Marka",sku:"DEMO-HVL-5090",weight_g:"280",color:"Doğal beyaz",
+  product_name:"Örnek Pamuklu Havlu 50×90",brand:"Örnek Marka",sku:"DEMO-HVL-5090",gtin:"09506000134352",lot:"DEMO-L01",weight_g:"280",color:"Doğal beyaz",
   country_origin:"Türkiye",carbon:"2.4",
   fiber_composition:[{fiber:"Organik pamuk",pct:"80"},{fiber:"Geri dönüştürülmüş pamuk",pct:"20"}],
   recycled_content:"20",fabric_weight:"500",reach:true,
   durability:"60°C'de 200 yıkamaya dayanıklı",care:"60°C'de yıkayın, ağartıcı kullanmayın",
   end_of_life:"Tekstil geri dönüşüm kutusuna atınız",certificates:[{type:"GOTS",number:"DEMO-0001"}]},
   priv:{facility:"Örnek Tekstil A.Ş., Denizli",azo_free:true,tier1_processes:"İplik, dokuma, boyama, konfeksiyon",tier1_suppliers:[{name:"Örnek İplik Ltd."}]}};
+
+/* ---------- i18n (TR / EN) ---------- */
+var EN_F={product_name:"Product name",brand:"Brand",sku:"Model / SKU",gtin:"GTIN (barcode)",lot:"Batch / lot no",serial:"Serial no",weight_g:"Weight",color:"Colour",
+ country_origin:"Country of origin",facility:"Manufacturing facility",carbon:"Carbon footprint",
+ care:"Care instructions",end_of_life:"Recycling / disposal",certificates:"Certificates",
+ fiber_composition:"Fibre composition",recycled_content:"Recycled content",fabric_weight:"Fabric weight",
+ reach:"REACH compliant",azo_free:"Free of azo dyes",svhc:"SVHC (>0.1%) note",
+ tier1_processes:"Tier 1 processes",tier1_suppliers:"Tier 1 suppliers",durability:"Durability / repairability",
+ material_comp:"Material composition",crm:"Critical raw materials",rohs:"RoHS compliant",reach_scip:"REACH / SCIP note",
+ energy_class:"Energy efficiency class",power_kwh_year:"Power consumption",repair_score:"Repairability score",
+ spare_years:"Spare parts availability",sw_update_years:"Software update period",ce_mark:"CE marking",
+ battery_passport:"Battery passport link",weee:"WEEE / recycling information"};
+var EN_U={"yıl":"years","kWh/yıl":"kWh/year"};
+var EN_S={"Kimlik":"Identity","Menşe":"Origin","Çevresel performans":"Environmental performance",
+ "Kullanım ve yaşam sonu":"Use and end of life","Sertifikalar":"Certificates","Malzeme":"Materials",
+ "Kimyasal güvenlik":"Chemical safety","Tedarik zinciri":"Supply chain","Dayanıklılık":"Durability",
+ "Madde uyumu":"Substance compliance","Enerji":"Energy","Dayanıklılık ve onarım":"Durability and repair",
+ "Güvenlik ve batarya":"Safety and battery","Yaşam sonu":"End of life"};
+var EN_N={"Commited karbon motoru ile hesaplanır":"Calculated with the Commited carbon engine","ör. boyama, dikim":"e.g. dyeing, sewing",
+ "GS1 Türkiye'den alınan 8, 12, 13 veya 14 haneli numara — kontrol hanesi doğrulanır":"8, 12, 13 or 14-digit number from GS1 — check digit is validated",
+ "Parti düzeyinde pasaport için (GS1 AI 10)":"For batch-level passports (GS1 AI 10)","Tekil ürün düzeyinde pasaport için (GS1 AI 21)":"For item-level passports (GS1 AI 21)"};
+var EN_SUB={"Tür (ör. GOTS)":"Type (e.g. GOTS)","Lif":"Fibre","Malzeme":"Material","Tedarikçi":"Supplier"};
+var UI={
+ tr:{cat_TEXTILE:"Tekstil",cat_ELECTRONICS:"Elektronik",desc_TEXTILE:"Hazır giyim, ev tekstili, aksesuar",desc_ELECTRONICS:"Tüketici elektroniği, cihazlar",
+  sub_brand:"Dijital Ürün Pasaportu",dpp:"Dijital Ürün Pasaportu",
+  a_PUBLIC:"Herkese açık",a_AUTHORITY:"Otorite",a_INTERNAL:"İç",yes:"Evet",no:"Hayır",add_row:"+ Satır ekle",del:"Sil",
+  required:"Zorunlu alan",req_count:"zorunlu alan",bad_gtin:"Geçersiz GTIN (hane sayısı veya kontrol hanesi hatalı)",
+  back_home:"Ana sayfa",back_mine:"Ürünlerime dön",unnamed_p:"(adsız ürün)",maker:"Üretici",sample:"Örnek veri",
+  f_carbon:"Karbon ayak izi",f_rec:"Geri dönüştürülmüş",f_origin:"Menşe",f_energy:"Enerji sınıfı",
+  auth_show:"Otorite görünümü (gümrük/denetim)",auth_hide:"Otorite alanlarını gizle",copy:"Bağlantıyı kopyala",copied:"Kopyalandı ✓",
+  qr_dl:"QR indir",edit:"Düzenle",
+  auth_note:"Üretim tesisi, tedarikçiler ve kimyasal madde notları gibi otorite alanları yalnızca yetkili kişilere açıktır.",
+  foot:"Bu pasaport ESPR (AB 2024/1781) veri yapısına göre hazırlanmıştır.",
+  lang_note:"Girilen değerler (ör. bakım talimatı) yazıldığı dilde gösterilir.",
+  ids:"Tanımlayıcılar",dl:"GS1 Digital Link",gran:"Pasaport düzeyi",g_model:"Model",g_batch:"Parti",g_item:"Tekil ürün",
+  label_btn:"QR etiketi",label_t:"Ürün etiketi",print:"Yazdır / PDF",
+  label_hint:"Gerçek boyutta yazdırılır (tarayıcıda ölçek %100). QR'ın ürün, ambalaj veya eşlik eden belgede bulunması gerekir.",
+  scan:"Ürün pasaportu için okutun",jsonld:"JSON-LD",jsonld_dl:"Dosya olarak indir",nf_t:"Pasaport bulunamadı",nf:"Bu bağlantıya ait pasaport bulunamadı."},
+ en:{cat_TEXTILE:"Textile",cat_ELECTRONICS:"Electronics",desc_TEXTILE:"Apparel, home textiles, accessories",desc_ELECTRONICS:"Consumer electronics, appliances",
+  sub_brand:"Digital Product Passport",dpp:"Digital Product Passport",
+  a_PUBLIC:"Public",a_AUTHORITY:"Authority",a_INTERNAL:"Internal",yes:"Yes",no:"No",add_row:"+ Add row",del:"Remove",
+  required:"Required field",req_count:"required fields",bad_gtin:"Invalid GTIN (wrong length or check digit)",
+  back_home:"Home",back_mine:"Back to my products",unnamed_p:"(untitled product)",maker:"Manufacturer",sample:"Sample data",
+  f_carbon:"Carbon footprint",f_rec:"Recycled content",f_origin:"Origin",f_energy:"Energy class",
+  auth_show:"Authority view (customs/surveillance)",auth_hide:"Hide authority fields",copy:"Copy link",copied:"Copied ✓",
+  qr_dl:"Download QR",edit:"Edit",
+  auth_note:"Authority fields such as the manufacturing facility, suppliers and chemical substance notes are only available to authorised parties.",
+  foot:"This passport follows the ESPR (EU 2024/1781) data structure.",
+  lang_note:"Entered values (e.g. care instructions) are shown in the language they were written in.",
+  ids:"Identifiers",dl:"GS1 Digital Link",gran:"Passport level",g_model:"Model",g_batch:"Batch",g_item:"Item",
+  label_btn:"QR label",label_t:"Product label",print:"Print / PDF",
+  label_hint:"Prints at actual size (set browser scale to 100%). The QR must be on the product, its packaging or accompanying documents.",
+  scan:"Scan for the product passport",jsonld:"JSON-LD",jsonld_dl:"Download as file",nf_t:"Passport not found",nf:"No passport exists for this link."}
+};
+var LANG=(function(){var m=/[?&]l=(en|tr)/.exec(location.search);if(m)return m[1];
+  try{var s=localStorage.getItem("dpp-lang");if(s)return s}catch(e){}
+  return /^tr/i.test(navigator.language||"tr")?"tr":"en";})();
+function T(k){return (UI[LANG]&&UI[LANG][k])||UI.tr[k]||k;}
+function TL(k,lang){return (UI[lang]&&UI[lang][k])||k;}
+function FL(f){return LANG==="en"&&EN_F[f.c]?EN_F[f.c]:f.l;}
+function FU(f){return LANG==="en"&&EN_U[f.u]?EN_U[f.u]:f.u;}
+function SL(t){return LANG==="en"&&EN_S[t]?EN_S[t]:t;}
+function NL(n){return LANG==="en"&&EN_N[n]?EN_N[n]:n;}
+function SUBL(l){return LANG==="en"&&EN_SUB[l]?EN_SUB[l]:l;}
+function paintLang(){var a=document.getElementById("lTR"),b=document.getElementById("lEN");
+  if(a)a.classList.toggle("on",LANG==="tr");if(b)b.classList.toggle("on",LANG==="en");
+  document.documentElement.lang=LANG;var bs=document.getElementById("brandSub");if(bs)bs.textContent=T("sub_brand");}
+window.setLang=function(l){LANG=l;try{localStorage.setItem("dpp-lang",l)}catch(e){}
+  paintLang();if(document.getElementById("form")&&draft){paintWizard();}else{route();}};
+
+/* ---------- GS1 ---------- */
+function gtinDigits(g){return String(g||"").replace(/\D/g,"");}
+function gtinValid(g){var d=gtinDigits(g);if([8,12,13,14].indexOf(d.length)<0)return false;
+  var sum=0,body=d.slice(0,-1);for(var i=0;i<body.length;i++){sum+=(+body[body.length-1-i])*(i%2===0?3:1);}
+  return (10-sum%10)%10===+d[d.length-1];}
+function gtin14(g){var d=gtinDigits(g);while(d.length<14)d="0"+d;return d;}
+function digitalLink(v){if(!v.gtin||!gtinValid(v.gtin))return null;
+  return "https://id.gs1.org/01/"+gtin14(v.gtin)+(v.lot?"/10/"+encodeURIComponent(v.lot):"")+(v.serial?"/21/"+encodeURIComponent(v.serial):"");}
+function hri(v){if(!v.gtin||!gtinValid(v.gtin))return "";return "(01) "+gtin14(v.gtin)+(v.lot?" (10) "+v.lot:"")+(v.serial?" (21) "+v.serial:"");}
+function granularity(v){return v.serial?"g_item":(v.lot?"g_batch":"g_model");}
+function passportUrl(v,id){var q="";if(v.gtin&&gtinValid(v.gtin)){q="?01="+gtin14(v.gtin)+(v.lot?"&10="+encodeURIComponent(v.lot):"")+(v.serial?"&21="+encodeURIComponent(v.serial):"");}
+  return location.origin+location.pathname+q+"#p/"+id;}
 
 /* ---------- helpers ---------- */
 var app=document.getElementById("app");
@@ -434,8 +552,8 @@ function paintWizard(){
     +head(editing?"Pasaportu düzenle":"Yeni pasaport",editing?"Değişiklikler kaydedildiğinde aynı QR kod güncel bilgiyi gösterir.":"Ürün kategorisini seçin, verileri girin, yayınlayın.");
   if(!editing){
     h+='<div class="chooser">'
-     +'<button class="choice'+(draft.category==="TEXTILE"?" on":"")+'" onclick="pickCat(\'TEXTILE\')"><h3>Tekstil</h3><p>'+CATS.TEXTILE.desc+'</p></button>'
-     +'<button class="choice'+(draft.category==="ELECTRONICS"?" on":"")+'" onclick="pickCat(\'ELECTRONICS\')"><h3>Elektronik</h3><p>'+CATS.ELECTRONICS.desc+'</p></button>'
+     +'<button class="choice'+(draft.category==="TEXTILE"?" on":"")+'" onclick="pickCat(\'TEXTILE\')"><h3>'+T("cat_TEXTILE")+'</h3><p>'+T("desc_TEXTILE")+'</p></button>'
+     +'<button class="choice'+(draft.category==="ELECTRONICS"?" on":"")+'" onclick="pickCat(\'ELECTRONICS\')"><h3>'+T("cat_ELECTRONICS")+'</h3><p>'+T("desc_ELECTRONICS")+'</p></button>'
      +'</div>';
   }
   if(draft.category)h+='<div id="form"></div>';
@@ -443,12 +561,12 @@ function paintWizard(){
   if(draft.category)paintForm();
 }
 window.pickCat=function(c){draft.category=c;saveDraft();paintWizard();};
-function badge(a){var m={PUBLIC:["pub","Herkese açık"],AUTHORITY:["auth","Otorite"],INTERNAL:["int","İç"]}[a]||["int",a];
+function badge(a){var m={PUBLIC:["pub",T("a_PUBLIC")],AUTHORITY:["auth",T("a_AUTHORITY")],INTERNAL:["int",T("a_INTERNAL")]}[a]||["int",a];
   return '<span class="pill '+m[0]+'">'+m[1]+'</span>';}
 function paintForm(){
   var v=draft.values,html="";
   CATS[draft.category].sections.forEach(function(s){
-    html+='<div class="section"><h3>'+esc(s.title)+'</h3>';
+    html+='<div class="section"><h3>'+esc(SL(s.title))+'</h3>';
     s.fields.forEach(function(f){html+=renderField(f,v[f.c]);});
     html+='</div>';
   });
@@ -459,28 +577,28 @@ function paintForm(){
 }
 function renderField(f,val){
   var id="f_"+f.c;
-  var lab='<label for="'+id+'">'+esc(f.l)+(f.r?' <span class="req">*</span>':'')+(f.u?' <span class="u">('+esc(f.u)+')</span>':'')+' '+badge(f.a)+'</label>';
+  var lab='<label for="'+id+'">'+esc(FL(f))+(f.r?' <span class="req">*</span>':'')+(f.u?' <span class="u">('+esc(FU(f))+')</span>':'')+' '+badge(f.a)+'</label>';
   var body;
   if(f.t==="BOOL"){
-    body='<label class="check"><input type="checkbox" id="'+id+'" '+(val?"checked":"")+' onchange="setVal(\''+f.c+'\',this.checked)"> Evet</label>';
+    body='<label class="check"><input type="checkbox" id="'+id+'" '+(val?"checked":"")+' onchange="setVal(\''+f.c+'\',this.checked)"> '+T("yes")+'</label>';
   }else if(f.t==="REP"){
-    body='<div id="rep_'+f.c+'">'+repRows(f,val)+'</div><button type="button" class="add-row" onclick="repAdd(\''+f.c+'\')">+ Satır ekle</button>';
+    body='<div id="rep_'+f.c+'">'+repRows(f,val)+'</div><button type="button" class="add-row" onclick="repAdd(\''+f.c+'\')">'+T("add_row")+'</button>';
   }else if(f.t==="LONG"){
     body='<textarea id="'+id+'" oninput="setVal(\''+f.c+'\',this.value)">'+esc(val||"")+'</textarea>';
   }else{
     var typ=f.t==="NUMBER"?"number":(f.t==="URL"?"url":"text");
     body='<input type="'+typ+'" id="'+id+'" value="'+esc(val==null?"":val)+'" oninput="setVal(\''+f.c+'\',this.value)">';
   }
-  return '<div class="field" id="field_'+f.c+'">'+lab+body+(f.note?'<span class="hint">'+esc(f.note)+'</span>':'')+'<span class="err" id="err_'+f.c+'" hidden></span></div>';
+  return '<div class="field" id="field_'+f.c+'">'+lab+body+(f.note?'<span class="hint">'+esc(NL(f.note))+'</span>':'')+'<span class="err" id="err_'+f.c+'" hidden></span></div>';
 }
 function repRows(f,val){val=val&&val.length?val:[{}];return val.map(function(r,i){return repRow(f,i,r)}).join("");}
 function repRow(f,i,row){
   row=row||{};var h='<div class="rep-row">';
   f.sub.forEach(function(sf){
-    h+='<input type="'+(sf.t==="NUMBER"?"number":"text")+'" placeholder="'+esc(sf.l)+'" aria-label="'+esc(sf.l)+'" value="'+esc(row[sf.c]==null?"":row[sf.c])
+    h+='<input type="'+(sf.t==="NUMBER"?"number":"text")+'" placeholder="'+esc(SUBL(sf.l))+'" aria-label="'+esc(SUBL(sf.l))+'" value="'+esc(row[sf.c]==null?"":row[sf.c])
       +'" oninput="repSet(\''+f.c+'\','+i+',\''+sf.c+'\',this.value)">';
   });
-  return h+'<button type="button" class="rm" onclick="repDel(\''+f.c+'\','+i+')" aria-label="Sil">×</button></div>';
+  return h+'<button type="button" class="rm" onclick="repDel(\''+f.c+'\','+i+')" aria-label="'+T("del")+'">×</button></div>';
 }
 window.setVal=function(c,v){draft.values[c]=v;saveDraft();clearErr(c);updateProgress();};
 window.repSet=function(c,i,sc,v){var a=draft.values[c]||[];while(a.length<=i)a.push({});a[i][sc]=v;draft.values[c]=a;saveDraft();clearErr(c);updateProgress();};
@@ -500,7 +618,7 @@ function updateProgress(){
   var done=req.filter(function(f){return filled(f,draft.values[f.c]);}).length;
   var bar=document.getElementById("pbar"),tx=document.getElementById("ptext");
   if(bar)bar.style.width=(req.length?Math.round(done/req.length*100):100)+"%";
-  if(tx)tx.textContent=done+" / "+req.length+" zorunlu alan";
+  if(tx)tx.textContent=done+" / "+req.length+" "+T("req_count");
 }
 function cleanVal(x){
   if(Array.isArray(x)){x=x.filter(function(r){return r&&Object.keys(r).some(function(kk){return r[kk]!=null&&r[kk]!==""})});return x.length?x:undefined;}
@@ -509,9 +627,10 @@ function cleanVal(x){
 window.publish=function(){
   var defs=fieldsOf(draft.category);
   var bad=defs.filter(function(f){return f.r&&!filled(f,draft.values[f.c]);});
+  if(draft.values.gtin&&!gtinValid(draft.values.gtin))bad.unshift(fieldDef(draft.category,"gtin"));
   if(bad.length){
     bad.forEach(function(f){var el=document.getElementById("field_"+f.c);if(el)el.classList.add("invalid");
-      var e=document.getElementById("err_"+f.c);if(e){e.textContent="Zorunlu alan";e.hidden=false;}});
+      var e=document.getElementById("err_"+f.c);if(e){e.textContent=f.c==="gtin"?T("bad_gtin"):T("required");e.hidden=false;}});
     var first=document.getElementById("field_"+bad[0].c);if(first)first.scrollIntoView({behavior:"smooth",block:"center"});
     return;
   }
@@ -533,12 +652,12 @@ window.publish=function(){
 };
 
 /* ---------- public passport ---------- */
-var showAuth=false;
+var showAuth=false,curP=null,curId=null,showLabel=false,showJson=false,labelSize="s70",labelLang=null,lastPub=null;
 function renderPublic(id){
   if(id===EXAMPLE.id){return paintPublic(EXAMPLE,id,EXAMPLE.priv,false);}
   loading("Pasaport yükleniyor…");
   fs.collection("passports").doc(id).get().then(function(d){
-    if(!d.exists){app.innerHTML=head("Pasaport bulunamadı","")+'<div class="empty">Bu bağlantıya ait pasaport bulunamadı.</div><a class="back" href="#">‹ Ana sayfa</a>';return;}
+    if(!d.exists){app.innerHTML=head(T("nf_t"),"")+'<div class="empty">'+T("nf")+'</div><a class="back" href="#">‹ '+T("back_home")+'</a>';return;}
     var p=d.data(),owner=!!(me&&p.ownerUid===me.uid);
     if(!owner)return paintPublic(p,id,null,false);
     d.ref.collection("private").doc("authority").get().then(function(x){paintPublic(p,id,x.exists?(x.data().values||{}):{},true);})
@@ -547,43 +666,57 @@ function renderPublic(id){
 }
 function paintPublic(p,id,priv,owner){
   var cat=p.category,v=Object.assign({},p.values||{},(showAuth&&priv)?priv:{});
-  var url=location.href.split("#")[0]+"#p/"+id;
-  var h='<a class="back" href="#">‹ '+(me?"Ürünlerime dön":"Ana sayfa")+'</a>';
+  var url=passportUrl(p.values||{},id);curP=p;curId=id;lastPub=[p,id,priv,owner];
+  var wantQ=url.slice((location.origin+location.pathname).length,url.indexOf("#"));
+  if(location.search!==wantQ){try{history.replaceState(null,"",url)}catch(e){}}
+  var h='<a class="back" href="#">‹ '+(me?T("back_mine"):T("back_home"))+'</a>';
   h+='<div class="pp-hero"><div class="main">'
-    +'<span class="eyebrow">'+esc(CATS[cat].label)+' · Dijital Ürün Pasaportu</span>'
-    +'<h1>'+esc(v.product_name||"(adsız ürün)")+'</h1>'
+    +'<span class="eyebrow">'+esc(T("cat_"+cat))+' · '+T("dpp")+'</span>'
+    +'<h1>'+esc(v.product_name||T("unnamed_p"))+'</h1>'
     +'<div class="br">'+esc(v.brand||"")+(v.sku?' · <span class="mono">'+esc(v.sku)+'</span>':'')+'</div>'
-    +(p.company?'<div class="sub">Üretici: '+esc(p.company)+'</div>':'')
-    +'<div style="margin-top:6px">'+(p.example?'<span class="pill auth">Örnek veri</span>':'<span class="pill ok">Commited DPP</span>')+'</div>'
+    +(p.company?'<div class="sub">'+T("maker")+': '+esc(p.company)+'</div>':'')
+    +'<div style="margin-top:6px">'+(p.example?'<span class="pill auth">'+T("sample")+'</span>':'<span class="pill ok">Commited DPP</span>')+'</div>'
     +'</div><div><div class="qrbox" id="qr"></div><div style="text-align:center;margin-top:6px" class="slug">#'+esc(id)+'</div></div></div>';
   h+='<div class="facts">';
-  if(v.carbon)h+=fact("Karbon ayak izi",esc(v.carbon)+" kgCO₂e");
-  if(v.recycled_content)h+=fact("Geri dönüştürülmüş","%"+esc(v.recycled_content));
-  if(v.country_origin)h+=fact("Menşe",esc(v.country_origin));
-  if(cat==="ELECTRONICS"&&v.energy_class)h+=fact("Enerji sınıfı",esc(v.energy_class));
+  if(v.carbon)h+=fact(T("f_carbon"),esc(v.carbon)+" kgCO₂e");
+  if(v.recycled_content)h+=fact(T("f_rec"),"%"+esc(v.recycled_content));
+  if(v.country_origin)h+=fact(T("f_origin"),esc(v.country_origin));
+  if(cat==="ELECTRONICS"&&v.energy_class)h+=fact(T("f_energy"),esc(v.energy_class));
   h+='</div>';
+  var dl=digitalLink(v);
+  h+='<div class="pp-sec"><h3>'+T("ids")+'</h3>'
+    +(dl?'<div class="row"><span class="k">GTIN</span><span class="v mono">'+gtin14(v.gtin)+'</span></div>':'')
+    +(v.lot?'<div class="row"><span class="k">'+esc(FL(fieldDef(cat,"lot")))+'</span><span class="v mono">'+esc(v.lot)+'</span></div>':'')
+    +(v.serial?'<div class="row"><span class="k">'+esc(FL(fieldDef(cat,"serial")))+'</span><span class="v mono">'+esc(v.serial)+'</span></div>':'')
+    +'<div class="row"><span class="k">'+T("gran")+'</span><span class="v">'+T(granularity(v))+'</span></div>'
+    +(dl?'<div class="row"><span class="k">'+T("dl")+'</span><span class="v mono" style="font-size:12px">'+esc(dl)+'</span></div>':'')
+    +'</div>';
   CATS[cat].sections.forEach(function(s){
-    var rows=s.fields.filter(function(f){return filled(f,v[f.c]);});
+    var rows=s.fields.filter(function(f){return f.c!=="gtin"&&f.c!=="lot"&&f.c!=="serial"&&filled(f,v[f.c]);});
     if(!rows.length)return;
     if(s.title==="Sertifikalar"){
-      h+='<div class="pp-sec"><h3>Sertifikalar</h3><div class="certs">';
+      h+='<div class="pp-sec"><h3>'+SL("Sertifikalar")+'</h3><div class="certs">';
       (v.certificates||[]).forEach(function(c){if(!c.type&&!c.number)return;h+='<span class="cert">'+esc(c.type||"Sertifika")+(c.number?' <span class="n">'+esc(c.number)+'</span>':'')+'</span>';});
       h+='</div></div>';return;
     }
-    h+='<div class="pp-sec"><h3>'+esc(s.title)+'</h3>';
-    rows.forEach(function(f){h+='<div class="row"><span class="k">'+esc(f.l)+(f.a==="AUTHORITY"?' '+badge("AUTHORITY"):'')+'</span><span class="v">'+esc(fmtVal(f,v[f.c]))+'</span></div>';});
+    h+='<div class="pp-sec"><h3>'+esc(SL(s.title))+'</h3>';
+    rows.forEach(function(f){h+='<div class="row"><span class="k">'+esc(FL(f))+(f.a==="AUTHORITY"?' '+badge("AUTHORITY"):'')+'</span><span class="v">'+esc(fmtVal(f,v[f.c]))+'</span></div>';});
     h+='</div>';
   });
   h+='<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">';
-  if(priv)h+='<button class="btn sm" onclick="toggleAuth()">'+(showAuth?"Otorite alanlarını gizle":"Otorite görünümü (gümrük/denetim)")+'</button>';
-  h+='<button class="btn sm" id="copyBtn">Bağlantıyı kopyala</button><button class="btn sm" id="dlBtn">QR indir</button>';
-  if(owner)h+='<a class="btn sm primary" href="#edit/'+esc(id)+'">Düzenle</a><button class="btn sm danger" onclick="delP(\''+esc(id)+'\')">Sil</button>';
+  if(priv)h+='<button class="btn sm" onclick="toggleAuth()">'+(showAuth?T("auth_hide"):T("auth_show"))+'</button>';
+  h+='<button class="btn sm" id="copyBtn">'+T("copy")+'</button><button class="btn sm" id="dlBtn">'+T("qr_dl")+'</button>'
+    +'<button class="btn sm" onclick="toggleLabel()">▦ '+T("label_btn")+'</button>'
+    +'<button class="btn sm" onclick="toggleJson()">{ } '+T("jsonld")+'</button>';
+  if(owner)h+='<a class="btn sm primary" href="#edit/'+esc(id)+'">'+T("edit")+'</a><button class="btn sm danger" onclick="delP(\''+esc(id)+'\')">'+T("del")+'</button>';
   h+='</div>';
-  if(!priv)h+='<div class="notice">Üretim tesisi, tedarikçiler ve kimyasal madde notları gibi otorite alanları yalnızca yetkili kişilere açıktır.</div>';
-  h+='<div class="foot-note">Bu pasaport ESPR (AB 2024/1781) veri yapısına göre hazırlanmıştır.<br>Powered by <b>Commited</b> · Dijital Ürün Pasaportu</div>';
+  if(showLabel)h+=labelPanel(v,url);
+  if(showJson)h+=jsonPanel(p,v,url);
+  if(!priv)h+='<div class="notice">'+T("auth_note")+'</div>';
+  h+='<div class="foot-note">'+T("foot")+(LANG==="en"?'<br>'+T("lang_note"):'')+'<br>Powered by <b>Commited</b> · '+T("dpp")+'</div>';
   app.innerHTML=h;
   document.getElementById("copyBtn").onclick=function(){
-    var b=this;try{navigator.clipboard.writeText(url).then(function(){b.textContent="Kopyalandı ✓";setTimeout(function(){b.textContent="Bağlantıyı kopyala"},1500)},function(){prompt("Bağlantı:",url)})}catch(e){prompt("Bağlantı:",url)}
+    var b=this;try{navigator.clipboard.writeText(url).then(function(){b.textContent=T("copied");setTimeout(function(){b.textContent=T("copy")},1500)},function(){prompt("Bağlantı:",url)})}catch(e){prompt("Bağlantı:",url)}
   };
   try{new QRCode(document.getElementById("qr"),{text:url,width:150,height:150,colorDark:"#15201B",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});}
   catch(e){document.getElementById("qr").innerHTML='<span class="slug">QR oluşturulamadı</span>';}
@@ -592,8 +725,71 @@ function paintPublic(p,id,priv,owner){
     var src=c?c.toDataURL("image/png"):(img?img.src:null);if(!src)return;
     var a=document.createElement("a");a.href=src;a.download="pasaport-"+id+".png";document.body.appendChild(a);a.click();a.remove();
   };
+  if(showLabel)drawLabelQR(url);
 }
 window.toggleAuth=function(){showAuth=!showAuth;route();};
+function repaintPublic(){if(lastPub)paintPublic.apply(null,lastPub);}
+
+/* ---------- printable QR label ---------- */
+window.toggleLabel=function(){showLabel=!showLabel;repaintPublic();
+  if(showLabel){var e=document.getElementById("labelPanel");if(e)e.scrollIntoView({behavior:"smooth",block:"center"});}};
+window.setLabelSize=function(s){labelSize=s;repaintPublic();};
+window.setLabelLang=function(l){labelLang=l;repaintPublic();};
+function lbl(k,ll){return ll==="both"?TL(k,"tr")+' / '+TL(k,"en"):TL(k,ll);}
+function labelPanel(v,url){
+  var ll=labelLang||LANG;
+  var h='<div class="label-panel" id="labelPanel"><h3>'+T("label_t")+'</h3><div class="label-opts">';
+  [["s50","50 × 30 mm"],["s70","70 × 40 mm"],["s100","100 × 60 mm"]].forEach(function(z){h+='<button class="'+(labelSize===z[0]?"on":"")+'" onclick="setLabelSize(\''+z[0]+'\')">'+z[1]+'</button>';});
+  h+='<span style="flex:1"></span>';
+  [["tr","TR"],["en","EN"],["both","TR + EN"]].forEach(function(z){h+='<button class="'+(ll===z[0]?"on":"")+'" onclick="setLabelLang(\''+z[0]+'\')">'+z[1]+'</button>';});
+  h+='</div><div class="label-stage"><div id="printArea"><div class="dpp-label '+labelSize+'">'
+    +'<div class="lq" id="labelQR"></div><div class="lt">'
+    +'<span class="l-ey">'+lbl("dpp",ll)+'</span>'
+    +'<span class="l-nm">'+esc(v.product_name||"")+'</span>'
+    +'<span class="l-br">'+esc(v.brand||"")+(v.sku?' · '+esc(v.sku):'')+'</span>'
+    +(v.carbon?'<span class="l-co">'+esc(v.carbon)+' kgCO₂e</span>':'')
+    +(hri(v)?'<span class="l-hri">'+esc(hri(v))+'</span>':'')
+    +'<span class="l-sc">'+lbl("scan",ll)+'</span>'
+    +'<span class="l-ft">Powered by Commited · ESPR (EU) 2024/1781</span>'
+    +'</div></div></div></div>'
+    +'<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px">'
+    +'<button class="btn primary sm" onclick="printLabel()">⎙ '+T("print")+'</button>'
+    +'<span class="hint">'+T("label_hint")+'</span></div></div>';
+  return h;
+}
+function drawLabelQR(url){var el=document.getElementById("labelQR");if(!el)return;
+  try{new QRCode(el,{text:url,width:512,height:512,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});}catch(e){}}
+window.printLabel=function(){document.body.classList.add("printing");
+  setTimeout(function(){window.print();setTimeout(function(){document.body.classList.remove("printing")},300);},60);};
+window.addEventListener("afterprint",function(){document.body.classList.remove("printing")});
+
+/* ---------- JSON-LD (public data only) ---------- */
+function jsonLd(p,v,url){
+  var cat=p.category,props=[];
+  fieldsOf(cat).forEach(function(f){if(f.a!=="PUBLIC"||!filled(f,v[f.c]))return;
+    if(["product_name","brand","sku","gtin","lot","serial","certificates","country_origin"].indexOf(f.c)>=0)return;
+    props.push({"@type":"PropertyValue",propertyID:f.c,name:EN_F[f.c]||f.l,value:(f.t==="REP"||f.t==="BOOL")?fmtValLang(f,v[f.c],"en"):v[f.c],unitText:f.u?(EN_U[f.u]||f.u):undefined});});
+  return {"@context":{"@vocab":"https://schema.org/","gs1":"https://ref.gs1.org/voc/"},
+    "@type":"Product","@id":digitalLink(v)||undefined,name:v.product_name,brand:{"@type":"Brand",name:v.brand},
+    manufacturer:p.company?{"@type":"Organization",name:p.company}:undefined,
+    model:v.sku,gtin:v.gtin&&gtinValid(v.gtin)?gtin14(v.gtin):undefined,"gs1:batchNumber":v.lot||undefined,"gs1:serialNumber":v.serial||undefined,
+    countryOfOrigin:v.country_origin,category:cat,
+    "gs1:certificationInfo":(v.certificates||[]).filter(function(c){return c.type||c.number}).map(function(c){return{"@type":"gs1:CertificationDetails","gs1:certificationStandard":c.type,"gs1:certificationIdentification":c.number}}),
+    additionalProperty:props,url:url,conformsTo:"ESPR (EU) 2024/1781"};
+}
+function jsonPanel(p,v,url){
+  return '<div class="label-panel" id="jsonPanel"><h3>JSON-LD</h3><textarea class="jsonbox" readonly>'+esc(JSON.stringify(jsonLd(p,v,url),null,2))+'</textarea>'
+    +'<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="copyJson(this)">'+T("copy")+'</button>'
+    +'<button class="btn sm" onclick="dlJson()">'+T("jsonld_dl")+'</button></div></div>';
+}
+window.toggleJson=function(){showJson=!showJson;repaintPublic();
+  if(showJson){var e=document.getElementById("jsonPanel");if(e)e.scrollIntoView({behavior:"smooth",block:"center"});}};
+window.copyJson=function(b){var t=document.querySelector("#jsonPanel textarea");
+  try{navigator.clipboard.writeText(t.value).then(function(){b.textContent=T("copied");setTimeout(function(){b.textContent=T("copy")},1500)},function(){t.select()})}catch(e){t.select()}};
+window.dlJson=function(){var t=document.querySelector("#jsonPanel textarea");if(!t)return;
+  var blob=new Blob([t.value],{type:"application/ld+json"}),a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download="dpp-"+(curId||"pasaport")+".jsonld";document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);};
 window.delP=function(id){
   if(!confirm("Bu pasaport kalıcı olarak silinsin mi? QR kodu artık çalışmaz."))return;
   var ref=fs.collection("passports").doc(id);
@@ -601,14 +797,16 @@ window.delP=function(id){
     .then(function(){location.hash="";}).catch(function(e){alert("Silinemedi: "+errTr(e));});
 };
 function fact(k,v){return '<div class="fact"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';}
-function fmtVal(f,v){
-  if(f.t==="BOOL")return v?"Evet":"Hayır";
+function fmtVal(f,v){return fmtValLang(f,v,LANG);}
+function fmtValLang(f,v,lang){
+  if(f.t==="BOOL")return v?TL("yes",lang):TL("no",lang);
   if(f.t==="REP"){
     if(f.c==="fiber_composition"||f.c==="material_comp")return v.map(function(r){return (r.fiber||r.mat||"")+(r.pct?" %"+r.pct:"");}).filter(Boolean).join(", ");
     return v.map(function(r){return r.name||r.type||Object.values(r).filter(Boolean).join(" ");}).filter(Boolean).join(", ");
   }
-  return v+(f.u?" "+f.u:"");
+  return v+(f.u?" "+(lang==="en"&&EN_U[f.u]?EN_U[f.u]:f.u):"");
 }
+paintLang();
 route();
 
 </script>
