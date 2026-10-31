@@ -783,12 +783,12 @@ var FIBER_EF=[ // kg CO2e / kg staple fibre; Forfora et al. 2026, Sustainability
 var EF_ELEC=0.478, EF_GAS=0.202;
 var EF_FUEL={diesel:2.68,lpg:2.985,coal:2.441,fueloil:3.127}; // kg CO2 per L (diesel) or per kg; IPCC 2006 defaults
 var EF_PACK={board:1.200,plastic:2.965}; // kg CO2e/kg; UK Gov GHG conversion factors 2025, material use, primary production
-var EF_TR=[{k:"road",re:/kara|road|t[ıi]r|kamyon|truck/i,ef:0.107},{k:"sea",re:/deniz|sea|gemi|ship|konteyner/i,ef:0.00365},{k:"air",re:/hava|air|u[çc]ak/i,ef:0.608},{k:"rail",re:/tren|rail|demir/i,ef:0.0307}]; // kg CO2e / tonne-km
+var EF_TR=[{k:"road",re:/kara|road|t[ıi]r|kamyon|truck/i,ef:0.107},{k:"sea",re:/deniz|sea|gemi|ship|konteyner/i,ef:0.01612},{k:"air",re:/hava|air|u[çc]ak/i,ef:0.608},{k:"rail",re:/tren|rail|demir/i,ef:0.0307}]; // kg CO2e / tonne-km
 var EST_SRC=[
   "Forfora N. et al. (2026) A Comparative Life Cycle Assessment of T-Shirt Production… Sustainability 18(8):4070, doi:10.3390/su18084070 — fibre production factors (Ecoinvent 3.10): cotton 2.8, polyester 3.1, viscose 5.9, lyocell 6.1 kg CO2e/kg",
   "T.C. Enerji ve Tabii Kaynaklar Bakanlığı (2022) Türkiye elektrik tüketim noktası emisyon faktörü — distribution grid 0.478 tCO2e/MWh",
   "IPCC (2006) Guidelines for National GHG Inventories, Vol. 2 Ch. 2 — natural gas 56,100 kg CO2/TJ (≈0.202 kg CO2/kWh); diesel 74,100 kg CO2/TJ (≈2.68 kg CO2/L); LPG 63,100 kg CO2/TJ (≈2.985 kg/kg); other bituminous coal 94,600 kg CO2/TJ (≈2.441 kg/kg); residual fuel oil 77,400 kg CO2/TJ (≈3.127 kg/kg)",
-  "UK Government (DESNZ/Defra) Greenhouse gas reporting: conversion factors 2025 — material use, primary production: board 1,200 kg CO2e/t; LDPE/LLDPE incl. forming 2,965 kg CO2e/t; sea freight container ship (average) 0.00365 kg CO2e/tonne-km",
+  "UK Government (DESNZ/Defra) Greenhouse gas reporting: conversion factors 2025 — material use, primary production: board 1,200 kg CO2e/t; LDPE/LLDPE incl. forming 2,965 kg CO2e/t; sea freight container ship (average) 0.01612 kg CO2e/tonne-km (as reproduced in NZ MfE Measuring Emissions Guide 2025, Table 8.20)",
   "Smart Freight Centre, GLEC Framework v3.2 (2023) default intensities, well-to-wheel — road articulated HDV 0.107, air freighter long-haul 0.608, rail diesel EU 0.0307 kg CO2e/tonne-km"];
 function num(x){var n=parseFloat(String(x==null?"":x).replace(",","."));return isFinite(n)?n:null;}
 function estimateCarbon(cat,v){
