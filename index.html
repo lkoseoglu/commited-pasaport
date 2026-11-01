@@ -201,6 +201,16 @@ main{padding-block:22px 64px}
   body.printing #printArea{position:absolute;left:0;top:0}
   body.printing .dpp-label{border:.2mm solid #bbb}
 }
+.cm-ov{position:fixed;inset:0;background:rgba(10,15,12,.55);display:flex;align-items:flex-end;justify-content:center;z-index:60}
+@media(min-width:560px){.cm-ov{align-items:center;padding:20px}}
+.cm-card{background:var(--surface);border:1px solid var(--line);border-radius:16px 16px 0 0;max-width:520px;width:100%;max-height:92vh;overflow-y:auto;padding:18px;padding-bottom:max(18px,env(safe-area-inset-bottom,0px))}
+@media(min-width:560px){.cm-card{border-radius:16px}}
+.cm-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.cm-h b{font-size:17px}
+.cm-x{border:1px solid var(--line);background:var(--surface);color:var(--muted);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px}
+.cm-sec{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.cm-st{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:8px}
+.cm-res{background:var(--surface-2);border-radius:9px;padding:10px 12px}
+.cm-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 </style>
 </head>
 <body>
@@ -672,7 +682,10 @@ function renderField(f,val){
   var id="f_"+f.c;
   var lab='<label for="'+id+'">'+esc(FL(f))+(f.r?' <span class="req">*</span>':'')+(f.u?' <span class="u">('+esc(FU(f))+')</span>':'')+' '+badge(f.a)+'</label>';
   var body;
-  if(f.t==="BOOL"){
+  if(f.c==="carbon"){
+    body='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input type="number" id="'+id+'" value="'+esc(val==null?"":val)+'" oninput="setVal(\'carbon\',this.value)" style="flex:1;min-width:130px">'
+      +'<button type="button" class="btn sm" onclick="openCarbCalc()">'+(LANG==="en"?"Don’t know? Calculate →":"Bilmiyorum, hesapla →")+'</button></div>';
+  }else if(f.t==="BOOL"){
     body='<label class="check"><input type="checkbox" id="'+id+'" '+(val?"checked":"")+' onchange="setVal(\''+f.c+'\',this.checked)"> '+T("yes")+'</label>';
   }else if(f.t==="REP"){
     body='<div id="rep_'+f.c+'">'+repRows(f,val)+'</div><button type="button" class="add-row" onclick="repAdd(\''+f.c+'\')">'+T("add_row")+'</button>';
@@ -775,11 +788,16 @@ function paintLv(){var w=document.getElementById("lvWarn");if(!w||!draft)return;
   w.textContent=(v.carbon_level==="verified"&&!((v.carbon_cert||[]).length))?T("lv_down"):"";}
 /* ---------- Commited carbon pre-calculation (textile, cradle-to-gate) ---------- */
 var EST_VER="CM-TX-1.1 (2026-10)";
-var FIBER_EF=[ // kg CO2e / kg staple fibre; Forfora et al. 2026, Sustainability 18(8):4070, Ecoinvent 3.10
+var FIBER_EF=[ // kg CO2e / kg staple fibre; cotton/polyester/viscose/lyocell: Forfora et al. 2026 (Ecoinvent 3.10); nylon/acrylic/elastane/wool/linen indicative (see sources)
   {k:"cotton",re:/pamuk|cotton/i,ef:2.8},
   {k:"polyester",re:/poly?es[tl]er|poliester|\bpes\b|\bpet\b/i,ef:3.1},
   {k:"lyocell",re:/lyocell|tencel/i,ef:6.1},
-  {k:"viscose",re:/vis[kc]o[nsz]|viscose|rayon/i,ef:5.9}];
+  {k:"viscose",re:/vis[kc]o[nsz]|viscose|rayon/i,ef:5.9},
+  {k:"nylon",re:/naylon|nylon|poliamid|polyamid|\bpa\b/i,ef:7.0},
+  {k:"acrylic",re:/akrilik|acrylic/i,ef:5.0},
+  {k:"elastane",re:/elastan|elastane|spandex|likra|lycra/i,ef:9.0},
+  {k:"wool",re:/y[üu]n|wool|merino/i,ef:20.0},
+  {k:"linen",re:/keten|linen|flax|kenevir|hemp/i,ef:2.3}];
 var EF_ELEC=0.478, EF_GAS=0.202;
 var EF_FUEL={diesel:2.68,lpg:2.985,coal:2.441,fueloil:3.127}; // kg CO2 per L (diesel) or per kg; IPCC 2006 defaults
 var EF_PACK={board:1.200,plastic:2.965}; // kg CO2e/kg; UK Gov GHG conversion factors 2025, material use, primary production
@@ -789,7 +807,8 @@ var EST_SRC=[
   "T.C. Enerji ve Tabii Kaynaklar Bakanlığı (2022) Türkiye elektrik tüketim noktası emisyon faktörü — distribution grid 0.478 tCO2e/MWh",
   "IPCC (2006) Guidelines for National GHG Inventories, Vol. 2 Ch. 2 — natural gas 56,100 kg CO2/TJ (≈0.202 kg CO2/kWh); diesel 74,100 kg CO2/TJ (≈2.68 kg CO2/L); LPG 63,100 kg CO2/TJ (≈2.985 kg/kg); other bituminous coal 94,600 kg CO2/TJ (≈2.441 kg/kg); residual fuel oil 77,400 kg CO2/TJ (≈3.127 kg/kg)",
   "UK Government (DESNZ/Defra) Greenhouse gas reporting: conversion factors 2025 — material use, primary production: board 1,200 kg CO2e/t; LDPE/LLDPE incl. forming 2,965 kg CO2e/t; sea freight container ship (average) 0.01612 kg CO2e/tonne-km (as reproduced in NZ MfE Measuring Emissions Guide 2025, Table 8.20)",
-  "Smart Freight Centre, GLEC Framework v3.2 (2023) default intensities, well-to-wheel — road articulated HDV 0.107, air freighter long-haul 0.608, rail diesel EU 0.0307 kg CO2e/tonne-km"];
+  "Smart Freight Centre, GLEC Framework v3.2 (2023) default intensities, well-to-wheel — road articulated HDV 0.107, air freighter long-haul 0.608, rail diesel EU 0.0307 kg CO2e/tonne-km",
+  "Ek lif faktörleri (göstergesel): naylon/poliamid 7.0, akrilik 5.0, elastan 9.0, yün 20.0, keten/kenevir 2.3 kg CO2e/kg — yaygın LCA literatürü / Higg MSI mertebesi. Doğrulanmış değer için üçüncü taraf LCA kullanın."];
 function num(x){var n=parseFloat(String(x==null?"":x).replace(",","."));return isFinite(n)?n:null;}
 function estimateCarbon(cat,v){
   if(cat!=="TEXTILE")return null;
@@ -855,6 +874,62 @@ function estHtml(r,showSources){
 }
 function paintEst(){var el=document.getElementById("estBox");if(!el||!draft)return;
   el.innerHTML=estHtml(estimateCarbon(draft.category,draft.values),true)+'<div class="hint" style="margin-top:8px">'+T("est_live")+'</div>';}
+
+/* ---------- "Bilmiyorum, hesapla" pop-up (reuses estimateCarbon; fibre-% weighted) ---------- */
+var CALC=null;
+window.openCarbCalc=function(){
+  if(!draft||draft.category!=="TEXTILE"){CALC={na:true};paintCalc();return;}
+  var v=draft.values;
+  var rows=(v.fiber_composition||[]).filter(function(x){return x&&(x.fiber||x.pct)}).map(function(x){return {fiber:x.fiber||"",pct:x.pct||""}});
+  if(!rows.length)rows=[{fiber:"",pct:""}];
+  CALC={rows:rows,weight_g:v.weight_g||"",elec_kwh:v.elec_kwh||"",tr_mode:"",tr_km:""};
+  paintCalc();
+};
+function calcTmp(){
+  var tv={fiber_composition:CALC.rows,weight_g:CALC.weight_g,elec_kwh:CALC.elec_kwh};
+  if(CALC.tr_km&&CALC.tr_mode)tv.transport_legs=[{km:CALC.tr_km,mode:CALC.tr_mode}];
+  return estimateCarbon("TEXTILE",tv);
+}
+function paintCalc(){
+  var root=document.getElementById("calcRoot");if(!root||!CALC)return;
+  var en=LANG==="en";
+  if(CALC.na){
+    root.innerHTML='<div class="cm-ov" onclick="if(event.target===this)calcClose()"><div class="cm-card">'
+      +'<div class="cm-h"><b>'+(en?"Carbon calculator":"Karbon hesaplayıcı")+'</b><button class="cm-x" onclick="calcClose()" aria-label="x">×</button></div>'
+      +'<p class="hint">'+(en?"The quick calculator currently supports textile products only.":"Hızlı hesaplayıcı şimdilik yalnızca tekstil ürünlerini destekler.")+'</p>'
+      +'<div class="cm-foot"><button class="btn" onclick="calcClose()">'+(en?"Close":"Kapat")+'</button></div></div></div>';return;
+  }
+  var r=calcTmp();
+  var h='<div class="cm-ov" onclick="if(event.target===this)calcClose()"><div class="cm-card">';
+  h+='<div class="cm-h"><b>'+(en?"Carbon footprint calculator":"Karbon ayak izi hesaplayıcı")+'</b><button class="cm-x" onclick="calcClose()" aria-label="x">×</button></div>';
+  h+='<p class="hint" style="margin:0">'+(en?"Enter the fibre mix and weight. Each fibre is counted by its share of the weight (percentages must total 100).":"Lif karışımını ve ağırlığı girin. Her lif, ağırlıktaki payı oranında hesaba katılır (yüzdeler toplamı 100 olmalı).")+'</p>';
+  h+='<div class="cm-sec"><div class="cm-st">'+(en?"Fibre composition (name + %)":"Lif kompozisyonu (ad + %)")+'</div>';
+  CALC.rows.forEach(function(x,i){h+='<div class="rep-row"><input type="text" placeholder="'+(en?"Fibre (e.g. cotton)":"Lif (ör. pamuk)")+'" value="'+esc(x.fiber)+'" oninput="calcRow('+i+',\'fiber\',this.value)"><input type="number" placeholder="%" style="max-width:80px" value="'+esc(x.pct)+'" oninput="calcRow('+i+',\'pct\',this.value)"><button type="button" class="rm" onclick="calcDelFiber('+i+')" aria-label="x">×</button></div>';});
+  h+='<button type="button" class="add-row" onclick="calcAddFiber()">'+(en?"+ Add fibre":"+ Lif ekle")+'</button></div>';
+  h+='<div class="cm-sec"><div class="cm-st">'+(en?"Product weight":"Ürün ağırlığı")+'</div><div class="rep-row"><input type="number" placeholder="g" value="'+esc(CALC.weight_g)+'" oninput="calcField(\'weight_g\',this.value)"><span class="hint" style="align-self:center">'+(en?"grams per product":"ürün başına gram")+'</span></div></div>';
+  h+='<div class="cm-sec"><div class="cm-st">'+(en?"Electricity per product (optional)":"Ürün başına elektrik (opsiyonel)")+'</div><div class="rep-row"><input type="number" placeholder="kWh" value="'+esc(CALC.elec_kwh)+'" oninput="calcField(\'elec_kwh\',this.value)"><span class="hint" style="align-self:center">× '+EF_ELEC+' kgCO₂e/kWh</span></div></div>';
+  h+='<div class="cm-sec"><div class="cm-st">'+(en?"Transport (optional)":"Nakliye (opsiyonel)")+'</div><div class="rep-row"><input type="text" placeholder="'+(en?"mode: road / sea / air":"tür: kara / deniz / hava")+'" value="'+esc(CALC.tr_mode)+'" oninput="calcField(\'tr_mode\',this.value)"><input type="number" placeholder="km" style="max-width:100px" value="'+esc(CALC.tr_km)+'" oninput="calcField(\'tr_km\',this.value)"></div></div>';
+  h+='<div class="cm-sec cm-res">'+estHtml(r,false)+'</div>';
+  h+='<div class="cm-foot"><button class="btn" onclick="calcClose()">'+(en?"Cancel":"İptal")+'</button><button class="btn primary"'+((r&&r.ok)?"":" disabled")+' onclick="calcApply()">'+(en?"Use result":"Sonucu uygula")+'</button></div>';
+  h+='</div></div>';root.innerHTML=h;
+}
+function refreshCalc(){var el=document.querySelector(".cm-res");if(!el)return;var r=calcTmp();el.innerHTML=estHtml(r,false);
+  var ab=document.querySelector(".cm-foot .btn.primary");if(ab){if(r&&r.ok)ab.removeAttribute("disabled");else ab.setAttribute("disabled","");}}
+window.calcRow=function(i,key,val){CALC.rows[i][key]=val;refreshCalc();};
+window.calcField=function(key,val){CALC[key]=val;refreshCalc();};
+window.calcAddFiber=function(){CALC.rows.push({fiber:"",pct:""});paintCalc();};
+window.calcDelFiber=function(i){CALC.rows.splice(i,1);if(!CALC.rows.length)CALC.rows.push({fiber:"",pct:""});paintCalc();};
+window.calcApply=function(){
+  var r=calcTmp();if(!r||!r.ok)return;
+  draft.values.carbon=String(r.total);
+  draft.values.carbon_level="calculated";
+  if(!draft.values.carbon_method)draft.values.carbon_method=(LANG==="en"?"Commited pre-calculation ":"Commited ön hesaplama ")+(r.ver||EST_VER);
+  draft.values.fiber_composition=CALC.rows.filter(function(x){return x.fiber||x.pct});
+  if(CALC.weight_g!=="")draft.values.weight_g=CALC.weight_g;
+  if(CALC.elec_kwh!=="")draft.values.elec_kwh=CALC.elec_kwh;
+  saveDraft();calcClose();paintForm();
+};
+window.calcClose=function(){var root=document.getElementById("calcRoot");if(root)root.innerHTML="";CALC=null;};
 
 /* ---------- file uploads (Firebase Storage) ---------- */
 var uploadsBusy=0;
@@ -1156,5 +1231,6 @@ paintLang();
 route();
 
 </script>
+<div id="calcRoot"></div>
 </body>
 </html>
