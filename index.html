@@ -345,6 +345,12 @@ function isAdminEmail(){return !!(me&&me.email&&ADMIN_EMAILS.indexOf(me.email.to
 function isAdmin(){return isAdminEmail()&&me.emailVerified;}
 var me=null, profile=null, authReady=false;
 
+/* ---------- tiers / freemium ---------- */
+var FREE_LIMIT=100;                      // ücretsiz katman ürün (pasaport) sınırı
+var PRO_CONTACT="commitedapp@gmail.com"; // Pro / onaylı rozet iletişim adresi
+var myCount=null;                        // kullanıcının pasaport sayısı (önbellek)
+function proMailto(subj){return 'mailto:'+PRO_CONTACT+'?subject='+encodeURIComponent(subj);}
+
 /* ---------- example passport (sample data, static) ---------- */
 var EXAMPLE={id:"ornek-havlu",category:"TEXTILE",example:true,values:{
   product_name:"Örnek Pamuklu Havlu 50×90",brand:"Örnek Marka",sku:"DEMO-HVL-5090",gtin:"09506000134352",lot:"DEMO-L01",weight_g:"280",color:"Doğal beyaz",
@@ -623,8 +629,10 @@ function card(id,p){
 function renderPortal(){
   var co=(profile&&profile.company)||"";
   app.innerHTML=head("Ürünlerim",(co?co+" · ":"")+"Pasaportlarınızı görüntüleyin, düzenleyin, yenilerini ekleyin.")
-   +'<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center"><a class="btn primary" href="#new">+ Yeni pasaport</a>'
+   +'<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center"><a class="btn primary" id="newBtn" href="#new">+ Yeni pasaport</a>'
    +'<input type="search" id="q" class="search" placeholder="Ürün, marka veya SKU ara…" aria-label="Ara"></div>'
+   +'<div id="portalCta"></div>'
+   +'<div style="margin-top:12px;padding:11px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);font-size:13px">⭐ <b>Commited onaylı doğrulama rozeti</b> — karbon ve veri doğrulaması için <a href="'+proMailto("DPP – Onaylı doğrulama rozeti")+'">iletişime geçin ›</a></div>'
    +'<div id="list"><div class="empty"><span class="spin"></span> Pasaportlar yükleniyor…</div></div>';
   var list=document.getElementById("list"),rows=[];
   function paint(){
@@ -638,6 +646,12 @@ function renderPortal(){
   fs.collection("passports").where("ownerUid","==",me.uid).get().then(function(snap){
     rows=snap.docs.map(function(d){return {id:d.id,p:d.data()}});
     rows.sort(function(a,b){return ts(b.p.updatedAt)-ts(a.p.updatedAt)});
+    myCount=rows.length;
+    var cta=document.getElementById("portalCta"),nb=document.getElementById("newBtn");
+    if(rows.length>=FREE_LIMIT){
+      if(cta)cta.innerHTML='<div style="margin-top:12px;padding:11px 14px;border:1px solid var(--accent);border-radius:var(--radius-sm);background:var(--public-bg);font-size:13px">Ücretsiz katman <b>'+FREE_LIMIT+' ürün</b> ile sınırlı ('+rows.length+'/'+FREE_LIMIT+'). Daha fazla pasaport için <b>Pro</b>: <a href="'+proMailto("DPP – Pro katman")+'">iletişime geçin ›</a></div>';
+      if(nb){nb.setAttribute("href",proMailto("DPP – Pro katman"));nb.textContent="Pro’ya geçin";}
+    }
     paint();
   }).catch(function(e){list.innerHTML='<div class="notice">Liste yüklenemedi: '+esc(errTr(e))+'</div>';});
 }
@@ -658,12 +672,22 @@ function renderWizard(editId){
     }).catch(function(e){app.innerHTML='<div class="notice">Yüklenemedi: '+esc(errTr(e))+'</div>';});
     return;
   }
-  draft={id:null,category:null,values:{}};
-  try{var d=lsGet(draftKey());if(d){var o=JSON.parse(d);if(o&&!o.id)draft=o;}}catch(e){}
-  if(!draft.values)draft.values={};
-  if(!draft.pid)draft.pid=genSlug();
-  saveDraft();
-  paintWizard();
+  function startNew(){
+    draft={id:null,category:null,values:{}};
+    try{var d=lsGet(draftKey());if(d){var o=JSON.parse(d);if(o&&!o.id)draft=o;}}catch(e){}
+    if(!draft.values)draft.values={};
+    if(!draft.pid)draft.pid=genSlug();
+    saveDraft();
+    paintWizard();
+  }
+  function blocked(){
+    app.innerHTML='<a class="back" href="#">‹ Ürünlerime dön</a>'
+      +head("Ücretsiz katman sınırı","Ücretsiz katmanda en fazla "+FREE_LIMIT+" ürün pasaportu oluşturabilirsiniz.")
+      +'<div style="margin-top:16px;padding:16px;border:1px solid var(--accent);border-radius:var(--radius-sm);background:var(--public-bg)">Mevcut ürünlerinizi düzenlemeye devam edebilirsiniz. Daha fazla pasaport, toplu işlem, ekip koltukları ve API için <b>Pro</b> katmanına geçin.<div style="margin-top:12px"><a class="btn primary" href="'+proMailto("DPP – Pro katman")+'">Pro için iletişime geçin</a></div></div>';
+  }
+  if(myCount!=null){if(myCount>=FREE_LIMIT)return blocked();return startNew();}
+  loading("…");
+  fs.collection("passports").where("ownerUid","==",me.uid).get().then(function(s){myCount=s.size;if(s.size>=FREE_LIMIT)return blocked();startNew();}).catch(function(){startNew();});
 }
 function saveDraft(){if(!draft.id)lsSet(draftKey(),JSON.stringify(draft));}
 function paintWizard(){
@@ -787,7 +811,7 @@ window.publish=function(){
   b.set(ref.collection("private").doc("authority"),{values:priv,updatedAt:now});
   var isNew=!draft.id,vals=pub;
   b.commit().then(function(){
-    if(isNew)notifyAdmin(id,vals,draft.category);
+    if(isNew){notifyAdmin(id,vals,draft.category);myCount=null;}
     if(!draft.id)lsDel(draftKey());
     draft=null;location.hash="p/"+id;
   }).catch(function(e){
@@ -1232,7 +1256,7 @@ window.delP=function(id){
   try{var all=[].concat((curP&&curP.values&&curP.values.photos)||[],(curP&&curP.values&&curP.values.cert_docs)||[],((lastPub&&lastPub[2])||{}).tech_docs||[]);
     all.forEach(function(x){if(x.path)st.ref(x.path).delete().catch(function(){});});}catch(e){}
   ref.collection("private").doc("authority").delete().catch(function(){}).then(function(){return ref.delete();})
-    .then(function(){location.hash="";}).catch(function(e){alert("Silinemedi: "+errTr(e));});
+    .then(function(){myCount=null;location.hash="";}).catch(function(e){alert("Silinemedi: "+errTr(e));});
 };
 function fact(k,v){return '<div class="fact"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';}
 function fmtVal(f,v){return fmtValLang(f,v,LANG);}
