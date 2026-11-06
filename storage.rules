@@ -24,14 +24,14 @@ service firebase.storage {
     match /uploads/{uid}/{pid}/public/{file} {
       allow read: if true;
       allow create, update: if isOwner(uid) && validUpload();
-      allow delete: if isOwner(uid);
+      allow delete: if isOwner(uid) || isAdmin();
     }
 
     // Otorite dosyalari: teknik belgeler, test raporlari (yalnizca sahibi ve yonetici)
     match /uploads/{uid}/{pid}/private/{file} {
       allow read: if isOwner(uid) || isAdmin();
       allow create, update: if isOwner(uid) && validUpload();
-      allow delete: if isOwner(uid);
+      allow delete: if isOwner(uid) || isAdmin();
     }
 
     // geri kalan her sey kapali

@@ -1064,19 +1064,51 @@ function renderAdmin(){
         +'<span style="flex:1"></span><input type="search" id="aq" class="search" placeholder="Ara…" value="'+esc(q)+'"></div>';
       if(adminTab==="passports"){
         var f=ps.filter(function(x){var v=x.p.values||{};return !q||[v.product_name,v.brand,v.sku,v.gtin,x.p.company,userName[x.p.ownerUid]].join(" ").toLocaleLowerCase("tr").indexOf(q)>=0;});
-        h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ürün</th><th>Marka / SKU</th><th>Üretici</th><th>Kategori</th><th>GTIN</th><th>Oluşturma</th><th>Güncelleme</th></tr></thead><tbody>'
-          +(f.length?f.map(function(x){var v=x.p.values||{};return '<tr><td><a href="#p/'+esc(x.id)+'">'+esc(v.product_name||"(adsız)")+'</a></td><td>'+esc(v.brand||"")+(v.sku?'<br><span class="slug">'+esc(v.sku)+'</span>':'')+'</td><td>'+esc(x.p.company||userName[x.p.ownerUid]||"—")+'</td><td>'+esc((CATS[x.p.category]||{}).label||x.p.category)+'</td><td class="mono">'+esc(v.gtin||"—")+'</td><td>'+fmtDate(x.p.createdAt)+'</td><td>'+fmtDate(x.p.updatedAt)+'</td></tr>'}).join(""):'<tr><td colspan="7" class="hint">Kayıt yok.</td></tr>')
-          +'</tbody></table></div>';
+        h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ürün</th><th>Marka / SKU</th><th>Üretici</th><th>Kategori</th><th>GTIN</th><th>Oluşturma</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>'
+          +(f.length?f.map(function(x){var v=x.p.values||{};return '<tr><td><a href="#p/'+esc(x.id)+'">'+esc(v.product_name||"(adsız)")+'</a></td><td>'+esc(v.brand||"")+(v.sku?'<br><span class="slug">'+esc(v.sku)+'</span>':'')+'</td><td>'+esc(x.p.company||userName[x.p.ownerUid]||"—")+'</td><td>'+esc((CATS[x.p.category]||{}).label||x.p.category)+'</td><td class="mono">'+esc(v.gtin||"—")+'</td><td>'+fmtDate(x.p.createdAt)+'</td><td>'+(x.p.revoked?'<span class="pill auth">İptal</span>':'<span class="pill ok">Geçerli</span>')+'</td><td style="white-space:nowrap">'
+            +'<button class="btn" onclick="admRevoke(\''+esc(x.id)+'\','+(!x.p.revoked)+')">'+(x.p.revoked?'Geri al':'İptal et')+'</button> '
+            +'<button class="btn" onclick="admDelete([\''+esc(x.id)+'\'])">Sil</button></td></tr>'}).join(""):'<tr><td colspan="7" class="hint">Kayıt yok.</td></tr>')
+          +'</tbody></table></div>'
+          +(f.length?'<p style="margin-top:12px"><button class="btn" onclick="admDelete(admVisible)">Listelenen '+f.length+' pasaportu sil</button></p>':'');
+        window.admVisible=f.map(function(x){return x.id});
       }else{
         var g=us.filter(function(x){return !q||[x.u.company,x.u.username,x.u.email].join(" ").toLocaleLowerCase("tr").indexOf(q)>=0;});
-        h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Firma</th><th>Kullanıcı adı</th><th>E-posta</th><th>Pasaport</th><th>Kayıt</th></tr></thead><tbody>'
-          +(g.length?g.map(function(x){return '<tr><td>'+esc(x.u.company||"—")+'</td><td>'+esc(x.u.username||"")+'</td><td><a href="mailto:'+esc(x.u.email||"")+'">'+esc(x.u.email||"")+'</a></td><td>'+(byOwner[x.id]||0)+'</td><td>'+fmtDate(x.u.createdAt)+'</td></tr>'}).join(""):'<tr><td colspan="5" class="hint">Kayıt yok.</td></tr>')
+        h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Firma</th><th>Kullanıcı adı</th><th>E-posta</th><th>Pasaport</th><th>Kayıt</th><th>Şifre</th></tr></thead><tbody>'
+          +(g.length?g.map(function(x){return '<tr><td>'+esc(x.u.company||"—")+'</td><td>'+esc(x.u.username||"")+'</td><td><a href="mailto:'+esc(x.u.email||"")+'">'+esc(x.u.email||"")+'</a></td><td>'+(byOwner[x.id]||0)+'</td><td>'+fmtDate(x.u.createdAt)+'</td><td>'+(x.u.email?'<button class="btn" onclick="admReset(\''+esc(x.u.email)+'\')">Sıfırlama e-postası</button>':'—')+'</td></tr>'}).join(""):'<tr><td colspan="6" class="hint">Kayıt yok.</td></tr>')
           +'</tbody></table></div>';
       }
       app.innerHTML=h;
       var aq=document.getElementById("aq");aq.oninput=function(){var pos=aq.selectionStart;paint();var n=document.getElementById("aq");n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}};
     }
     window.setAdminTab=function(t){adminTab=t;paint();};
+    function find(id){for(var i=0;i<ps.length;i++)if(ps[i].id===id)return ps[i];}
+    window.admRevoke=function(id,on){
+      var reason="";
+      if(on){reason=prompt("Bu pasaport iptal edilecek. QR okutulduğunda \"geçersiz\" uyarısı görünecek.\nİptal nedeni (isteğe bağlı):","");if(reason===null)return;}
+      var upd=on?{revoked:true,revokedAt:firebase.firestore.FieldValue.serverTimestamp(),revokedReason:reason}
+                :{revoked:firebase.firestore.FieldValue.delete(),revokedAt:firebase.firestore.FieldValue.delete(),revokedReason:firebase.firestore.FieldValue.delete()};
+      fs.collection("passports").doc(id).update(upd).then(function(){var x=find(id);if(on){x.p.revoked=true;}else{delete x.p.revoked;}paint();})
+        .catch(function(e){alert("İşlem yapılamadı: "+errTr(e));});
+    };
+    window.admDelete=function(ids){
+      if(!ids||!ids.length)return;
+      if(!confirm(ids.length+" pasaport ve dosyaları KALICI olarak silinecek. Bu işlem geri alınamaz.\nDevam edilsin mi?"))return;
+      loading("Siliniyor… ("+ids.length+")");
+      Promise.all(ids.map(function(id){
+        var x=find(id),ref=fs.collection("passports").doc(id),owner=x&&x.p.ownerUid;
+        var files=owner?Promise.all(["public","private"].map(function(vis){
+          return st.ref("uploads/"+owner+"/"+id+"/"+vis).listAll().then(function(l){return Promise.all(l.items.map(function(i){return i.delete()}))}).catch(function(){});
+        })):Promise.resolve();
+        return files.then(function(){return ref.collection("private").get()})
+          .then(function(q){return Promise.all(q.docs.map(function(d){return d.ref.delete()}))})
+          .then(function(){return ref.delete()});
+      })).then(function(){renderAdmin();}).catch(function(e){alert("Silme hatası: "+errTr(e));renderAdmin();});
+    };
+    window.admReset=function(email){
+      if(!confirm(email+" adresine şifre sıfırlama bağlantısı gönderilsin mi?"))return;
+      auth.languageCode="tr";
+      auth.sendPasswordResetEmail(email).then(function(){alert("Gönderildi: "+email);}).catch(function(e){alert("Gönderilemedi: "+errTr(e));});
+    };
     paint();
   }).catch(function(e){
     app.innerHTML=head("Admin paneli","")+'<div class="notice">Veriler okunamadı: '+esc(errTr(e))+'<br>Firestore güvenlik kurallarında yönetici okuma izni tanımlı olmalı.</div>';
@@ -1097,11 +1129,17 @@ function renderPublic(id){
   }).catch(function(e){app.innerHTML='<div class="notice">Yüklenemedi: '+esc(errTr(e))+'</div>';});
 }
 function paintPublic(p,id,priv,owner){
+  if(p.revoked&&!owner){
+    app.innerHTML='<a class="back" href="#">‹ '+T("back_home")+'</a><div class="notice" style="margin-top:16px"><strong>Bu ürün pasaportu iptal edilmiştir / This product passport has been revoked.</strong>'
+      +(p.revokedReason?'<br>'+esc(p.revokedReason):'')+'<br><span class="hint">Commited · '+esc(id)+'</span></div>';
+    return;
+  }
   var cat=p.category,v=Object.assign({},p.values||{},(showAuth&&priv)?priv:{});
   var url=passportUrl(p.values||{},id);curP=p;curId=id;lastPub=[p,id,priv,owner];
   var wantQ=url.slice((location.origin+location.pathname).length,url.indexOf("#"));
   if(location.search!==wantQ){try{history.replaceState(null,"",url)}catch(e){}}
   var h='<a class="back" href="#">‹ '+(me?T("back_mine"):T("back_home"))+'</a>';
+  if(p.revoked)h+='<div class="notice">Bu pasaport Commited tarafından iptal edildi; QR okutan herkes yalnızca "iptal edildi" uyarısını görüyor.'+(p.revokedReason?' Neden: '+esc(p.revokedReason):'')+'</div>';
   h+='<div class="pp-hero"><div class="main">'
     +'<span class="eyebrow">'+esc(T("cat_"+cat))+' · '+T("dpp")+'</span>'
     +'<h1>'+esc(v.product_name||T("unnamed_p"))+'</h1>'
