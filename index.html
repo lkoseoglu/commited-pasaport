@@ -70,6 +70,7 @@ main{padding-block:22px 64px}
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;letter-spacing:.02em}
 .pill.pub,.pill.ok{color:var(--public);background:var(--public-bg)}
 .pill.auth{color:var(--authority);background:var(--authority-bg)}
+.pill.bad{color:var(--danger);background:var(--surface-2);border:1px solid currentColor}
 .pill.int{color:var(--internal);background:var(--internal-bg)}
 .empty{border:1px dashed var(--line);border-radius:var(--radius);padding:40px 22px;text-align:center;color:var(--muted);margin-top:18px;background:var(--surface)}
 .notice{border:1px solid var(--line);background:var(--surface-2);border-radius:var(--radius-sm);padding:12px 14px;font-size:13.5px;color:var(--muted);margin-top:16px}
@@ -418,7 +419,8 @@ var UI={
   ids:"Tanımlayıcılar",dl:"GS1 Digital Link",gran:"Pasaport düzeyi",g_model:"Model",g_batch:"Parti",g_item:"Tekil ürün",
   label_btn:"QR etiketi",label_t:"Ürün etiketi",print:"Yazdır / PDF",
   label_hint:"Gerçek boyutta yazdırılır (tarayıcıda ölçek %100). QR'ın ürün, ambalaj veya eşlik eden belgede bulunması gerekir.",
-  scan:"Ürün pasaportu için okutun",jsonld:"JSON-LD",jsonld_dl:"Dosya olarak indir",nf_t:"Pasaport bulunamadı",nf:"Bu bağlantıya ait pasaport bulunamadı."},
+  scan:"Ürün pasaportu için okutun",jsonld:"JSON-LD",jsonld_dl:"Dosya olarak indir",nf_t:"Pasaport bulunamadı",nf:"Bu bağlantıya ait pasaport bulunamadı.",
+  vc_ok:"✓ Commited imzası doğrulandı",vc_pending:"İmza hazırlanıyor",vc_bad:"⚠ İmza doğrulanamadı",vc_ok_t:"Bu pasaportun verileri Commited tarafından dijital olarak imzalandı ve imzadan sonra değişmedi (W3C Verifiable Credentials 2.0).",vc_pending_t:"Pasaport yeni kaydedildi veya güncellendi; Commited imzası birkaç dakika içinde eklenecek.",vc_bad_t:"Bu sayfadaki veriler Commited'in imzaladığı sürümle uyuşmuyor. Ürünü satın almadan önce üreticiye danışın.",vc_dl:"VC indir",vc_signed:"İmza tarihi"},
  en:{cat_TEXTILE:"Textile",cat_ELECTRONICS:"Electronics",desc_TEXTILE:"Apparel, home textiles, accessories",desc_ELECTRONICS:"Consumer electronics, appliances",
   sub_brand:"Digital Product Passport",dpp:"Digital Product Passport",
   a_PUBLIC:"Public",a_AUTHORITY:"Authority",a_INTERNAL:"Internal",yes:"Yes",no:"No",add_row:"+ Add row",del:"Remove",
@@ -449,7 +451,8 @@ var UI={
   ids:"Identifiers",dl:"GS1 Digital Link",gran:"Passport level",g_model:"Model",g_batch:"Batch",g_item:"Item",
   label_btn:"QR label",label_t:"Product label",print:"Print / PDF",
   label_hint:"Prints at actual size (set browser scale to 100%). The QR must be on the product, its packaging or accompanying documents.",
-  scan:"Scan for the product passport",jsonld:"JSON-LD",jsonld_dl:"Download as file",nf_t:"Passport not found",nf:"No passport exists for this link."}
+  scan:"Scan for the product passport",jsonld:"JSON-LD",jsonld_dl:"Download as file",nf_t:"Passport not found",nf:"No passport exists for this link.",
+  vc_ok:"✓ Commited signature verified",vc_pending:"Signature pending",vc_bad:"⚠ Signature check failed",vc_ok_t:"This passport's data was digitally signed by Commited and has not changed since (W3C Verifiable Credentials 2.0).",vc_pending_t:"This passport was just saved or updated; the Commited signature will be added within a few minutes.",vc_bad_t:"The data on this page does not match the version signed by Commited. Check with the manufacturer before relying on it.",vc_dl:"Download VC",vc_signed:"Signed"}
 };
 var LANG=(function(){var m=/[?&]l=(en|tr)/.exec(location.search);if(m)return m[1];
   try{var s=localStorage.getItem("dpp-lang");if(s)return s}catch(e){}
@@ -1061,8 +1064,10 @@ function renderAdmin(){
         +fact("Tekstil / Elektronik",tex+" / "+(ps.length-tex))+fact("GTIN'li",gt)+'</div>'
         +'<div class="tabs"><button class="'+(adminTab==="passports"?"on":"")+'" onclick="setAdminTab(\'passports\')">Pasaportlar</button>'
         +'<button class="'+(adminTab==="users"?"on":"")+'" onclick="setAdminTab(\'users\')">Üreticiler</button>'
+        +'<button class="'+(adminTab==="keys"?"on":"")+'" onclick="setAdminTab(\'keys\')">İmza anahtarı</button>'
         +'<span style="flex:1"></span><input type="search" id="aq" class="search" placeholder="Ara…" value="'+esc(q)+'"></div>';
-      if(adminTab==="passports"){
+      if(adminTab==="keys"){h+=keysPanel();}
+      else if(adminTab==="passports"){
         var f=ps.filter(function(x){var v=x.p.values||{};return !q||[v.product_name,v.brand,v.sku,v.gtin,x.p.company,userName[x.p.ownerUid]].join(" ").toLocaleLowerCase("tr").indexOf(q)>=0;});
         h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ürün</th><th>Marka / SKU</th><th>Üretici</th><th>Kategori</th><th>GTIN</th><th>Oluşturma</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>'
           +(f.length?f.map(function(x){var v=x.p.values||{};return '<tr><td><a href="#p/'+esc(x.id)+'">'+esc(v.product_name||"(adsız)")+'</a></td><td>'+esc(v.brand||"")+(v.sku?'<br><span class="slug">'+esc(v.sku)+'</span>':'')+'</td><td>'+esc(x.p.company||userName[x.p.ownerUid]||"—")+'</td><td>'+esc((CATS[x.p.category]||{}).label||x.p.category)+'</td><td class="mono">'+esc(v.gtin||"—")+'</td><td>'+fmtDate(x.p.createdAt)+'</td><td>'+(x.p.revoked?'<span class="pill auth">İptal</span>':'<span class="pill ok">Geçerli</span>')+'</td><td style="white-space:nowrap">'
@@ -1078,7 +1083,8 @@ function renderAdmin(){
           +'</tbody></table></div>';
       }
       app.innerHTML=h;
-      var aq=document.getElementById("aq");aq.oninput=function(){var pos=aq.selectionStart;paint();var n=document.getElementById("aq");n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}};
+      if(adminTab==="keys")keysStatus();
+      var aq=document.getElementById("aq");aq.oninput=function(){if(adminTab==="keys")return;var pos=aq.selectionStart;paint();var n=document.getElementById("aq");n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}};
     }
     window.setAdminTab=function(t){adminTab=t;paint();};
     function find(id){for(var i=0;i<ps.length;i++)if(ps[i].id===id)return ps[i];}
@@ -1101,6 +1107,7 @@ function renderAdmin(){
         })):Promise.resolve();
         return files.then(function(){return ref.collection("private").get()})
           .then(function(q){return Promise.all(q.docs.map(function(d){return d.ref.delete()}))})
+          .then(function(){return fs.collection("credentials").doc(id).delete().catch(function(){})})
           .then(function(){return ref.delete()});
       })).then(function(){renderAdmin();}).catch(function(e){alert("Silme hatası: "+errTr(e));renderAdmin();});
     };
@@ -1114,6 +1121,46 @@ function renderAdmin(){
     app.innerHTML=head("Admin paneli","")+'<div class="notice">Veriler okunamadı: '+esc(errTr(e))+'<br>Firestore güvenlik kurallarında yönetici okuma izni tanımlı olmalı.</div>';
   });
 }
+
+/* ---------- admin: imza anahtarı (anahtar tarayıcıda üretilir, hiçbir yere gönderilmez) ---------- */
+function keysPanel(){
+  return '<div class="section"><h3>Pasaport imza anahtarı · W3C Verifiable Credentials</h3>'
+    +'<p style="margin:0 0 10px">Commited her pasaportu bu anahtarla imzalar; pasaport sayfası imzayı herkese açık anahtarla doğrular ve "✓ Commited imzası doğrulandı" gösterir.</p>'
+    +'<div class="row"><span class="k">İmza kimliği</span><span class="v mono">'+esc(VC_DID)+'</span></div>'
+    +'<div class="row"><span class="k">Yayımlanan açık anahtar</span><span class="v" id="keyStat"><span class="spin"></span></span></div>'
+    +'<p style="margin:14px 0 8px"><button class="btn primary" id="genKey" onclick="genVcKey()">Yeni anahtar çifti oluştur</button></p>'
+    +'<p class="hint" style="margin:0">Anahtar yalnızca bu tarayıcıda üretilir. Yeni anahtar oluşturmak, önceki imzaları geçersiz kılar; yalnızca ilk kurulumda veya anahtar ele geçirildiğinde kullanın.</p>'
+    +'<div id="keyOut"></div></div>';
+}
+function keysStatus(){
+  var el=document.getElementById("keyStat");if(!el)return;
+  vcKeyP=null;vcKey(VC_KID).then(function(){el.innerHTML='<span class="pill ok">Yayımlandı</span>';})
+    .catch(function(){el.innerHTML='<span class="pill auth">Henüz yok</span>';});
+}
+function pemWrap(b64,label){return "-----BEGIN "+label+"-----\n"+b64.match(/.{1,64}/g).join("\n")+"\n-----END "+label+"-----";}
+function bytesB64(buf){var b="",u=new Uint8Array(buf);for(var i=0;i<u.length;i++)b+=String.fromCharCode(u[i]);return btoa(b);}
+window.genVcKey=function(){
+  if(!confirm("Yeni bir imza anahtarı oluşturulacak. Daha önce yayımlanmış bir anahtar varsa, değiştirildiğinde eski imzalar geçersiz olur.\nDevam edilsin mi?"))return;
+  var b=document.getElementById("genKey");b.disabled=true;
+  crypto.subtle.generateKey({name:"RSASSA-PKCS1-v1_5",modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:"SHA-256"},true,["sign","verify"])
+  .then(function(kp){return Promise.all([crypto.subtle.exportKey("pkcs8",kp.privateKey),crypto.subtle.exportKey("jwk",kp.publicKey)]);})
+  .then(function(r){
+    var pem=pemWrap(bytesB64(r[0]),"PRIVATE KEY"),jwk={kty:"RSA",n:r[1].n,e:r[1].e,alg:"RS256"};
+    var did={"@context":["https://www.w3.org/ns/did/v1","https://w3id.org/security/suites/jws-2020/v1"],id:VC_DID,
+      verificationMethod:[{id:VC_KID,type:"JsonWebKey2020",controller:VC_DID,publicKeyJwk:jwk}],
+      assertionMethod:[VC_KID],authentication:[VC_KID]};
+    document.getElementById("keyOut").innerHTML=
+      '<div class="notice" style="color:var(--fg)"><b>1 · Gizli anahtar</b> — kimseyle paylaşmayın, e-postayla göndermeyin. Bu sayfayı kapatınca bir daha gösterilmez.<br>'
+      +'Apps Script projesinde <b>Proje ayarları → Komut dosyası özellikleri → Özellik ekle</b>: ad <span class="mono">IMZA_ANAHTARI</span>, değer aşağıdaki metnin tamamı.'
+      +'<textarea class="jsonbox" readonly style="height:120px;margin-top:8px">'+esc(pem)+'</textarea>'
+      +'<button class="btn sm" onclick="copyBox(this)">Kopyala</button></div>'
+      +'<div class="notice" style="color:var(--fg)"><b>2 · Açık anahtar (did.json)</b> — paylaşılabilir. Bu metni Claude\'a iletin; sitenin <span class="mono">.well-known/did.json</span> dosyası olarak yayımlanacak.'
+      +'<textarea class="jsonbox" readonly style="height:160px;margin-top:8px">'+esc(JSON.stringify(did,null,2))+'</textarea>'
+      +'<button class="btn sm" onclick="copyBox(this)">Kopyala</button></div>';
+  }).catch(function(e){alert("Anahtar oluşturulamadı: "+e.message);b.disabled=false;});
+};
+window.copyBox=function(b){var t=b.previousElementSibling;
+  try{navigator.clipboard.writeText(t.value).then(function(){b.textContent="Kopyalandı";setTimeout(function(){b.textContent="Kopyala"},1500)},function(){t.select()})}catch(e){t.select()}};
 
 /* ---------- public passport ---------- */
 var showAuth=false,curP=null,curId=null,showLabel=false,showJson=false,labelSize="s70",labelLang=null,lastPub=null;
@@ -1145,7 +1192,7 @@ function paintPublic(p,id,priv,owner){
     +'<h1>'+esc(v.product_name||T("unnamed_p"))+'</h1>'
     +'<div class="br">'+esc(v.brand||"")+(v.sku?' · <span class="mono">'+esc(v.sku)+'</span>':'')+'</div>'
     +(p.company?'<div class="sub">'+T("maker")+': '+esc(p.company)+'</div>':'')
-    +'<div style="margin-top:6px">'+(p.example?'<span class="pill auth">'+T("sample")+'</span>':'<span class="pill ok">Commited DPP</span>')+'</div>'
+    +'<div style="margin-top:6px">'+(p.example?'<span class="pill auth">'+T("sample")+'</span>':'<span class="pill ok">Commited DPP</span> <span id="vcBadge"></span>')+'</div>'
     +'</div><div><div class="qrbox" id="qr"></div><div style="text-align:center;margin-top:6px" class="slug">#'+esc(id)+'</div></div></div>';
   var photos=(v.photos||[]).filter(function(x){return x.url});
   if(photos.length)h+='<div class="gallery">'+photos.map(function(x){return '<a href="'+esc(x.url)+'" target="_blank" rel="noopener"><img src="'+esc(x.url)+'" alt="'+esc(v.product_name||"")+'" loading="lazy"></a>'}).join("")+'</div>';
@@ -1217,6 +1264,7 @@ function paintPublic(p,id,priv,owner){
     var a=document.createElement("a");a.href=src;a.download="pasaport-"+id+".png";document.body.appendChild(a);a.click();a.remove();
   };
   if(showLabel){var ll=labelLang||LANG;drawLabelQR(passportUrl(p.values||{},id,ll==="both"?null:ll));}
+  if(!p.example)paintVc(id,p);
 }
 window.toggleAuth=function(){showAuth=!showAuth;route();};
 function repaintPublic(){if(lastPub)paintPublic.apply(null,lastPub);}
@@ -1256,6 +1304,68 @@ window.printLabel=function(){document.body.classList.add("printing");
   setTimeout(function(){window.print();setTimeout(function(){document.body.classList.remove("printing")},300);},60);};
 window.addEventListener("afterprint",function(){document.body.classList.remove("printing")});
 
+/* ---------- Verifiable Credential (W3C VC 2.0, VC-JOSE / RS256) ---------- */
+// Commited'in Apps Script'i her pasaportun herkese açık verisini imzalayıp credentials/{id} belgesine yazar.
+// Sayfa imzayı .well-known/did.json içindeki açık anahtarla tarayıcıda doğrular.
+var VC_DID="did:web:pasaport.commited.app",VC_KID=VC_DID+"#key-1",vcKeyP=null,vcState={};
+function b64uBytes(s){s=String(s).replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";
+  var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+function b64uJson(s){return JSON.parse(new TextDecoder().decode(b64uBytes(s)));}
+// Anahtar sırası ve tarih biçiminden bağımsız karşılaştırma (Apps Script'teki fsDeger_ ile aynı kurallar)
+function canon(x){
+  if(x&&typeof x.toMillis==="function")return JSON.stringify(x.toMillis());
+  if(Array.isArray(x))return "["+x.map(canon).join(",")+"]";
+  if(x&&typeof x==="object")return "{"+Object.keys(x).filter(function(k){return x[k]!==undefined}).sort()
+    .map(function(k){return JSON.stringify(k)+":"+canon(x[k])}).join(",")+"}";
+  return JSON.stringify(x===undefined?null:x);
+}
+function vcKey(kid){
+  if(!vcKeyP)vcKeyP=fetch("./.well-known/did.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw new Error("did.json");return r.json();});
+  return vcKeyP.then(function(d){
+    var vm=(d.verificationMethod||[]).filter(function(m){return m.id===kid&&m.publicKeyJwk})[0];
+    if(d.id!==VC_DID||!vm)throw new Error("nokey");
+    return crypto.subtle.importKey("jwk",vm.publicKeyJwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
+  });
+}
+// sonuç: ok | pending | bad | none (imzalama henüz kurulmamış / okunamadı)
+function verifyVc(id,p){
+  // açık anahtar yayımlanmadıysa imzalama henüz kurulmamıştır: rozet gösterme
+  return vcKey(VC_KID).then(function(){return fs.collection("credentials").doc(id).get();},function(){return null;}).then(function(d){
+    if(d===null)return {s:"none"};
+    if(!d.exists)return {s:"pending"};
+    var jwt=String(d.data().jwt||""),pt=jwt.split(".");
+    if(pt.length!==3)return {s:"bad"};
+    var hd=b64uJson(pt[0]);
+    if(hd.alg!=="RS256"||hd.kid!==VC_KID)return {s:"bad"};
+    return vcKey(hd.kid).then(function(key){
+      return crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,b64uBytes(pt[2]),new TextEncoder().encode(pt[0]+"."+pt[1]));
+    }).then(function(valid){
+      if(!valid)return {s:"bad"};
+      var vc=b64uJson(pt[1]),cs=vc.credentialSubject||{};
+      if(!vc.issuer||vc.issuer.id!==VC_DID||cs.passportId!==id)return {s:"bad"};
+      var same=canon(cs.passportData||{})===canon(p.values||{})&&(cs.category||"")===(p.category||"")&&(cs.manufacturer||"")===(p.company||"");
+      if(same)return {s:"ok",jwt:jwt,at:vc.validFrom};
+      var pu=p.updatedAt&&p.updatedAt.toMillis?p.updatedAt.toMillis():0,su=Date.parse(cs.passportUpdatedAt||"")||0;
+      return {s:pu>su?"pending":"bad"};
+    },function(e){return {s:"none"};});
+  }).catch(function(){return {s:"none"};});
+}
+function paintVc(id,p){
+  var put=function(r){vcState[id]=r;var el=document.getElementById("vcBadge");if(!el||curId!==id)return;
+    if(r.s==="none"){el.innerHTML="";return;}
+    var cls={ok:"ok",pending:"auth",bad:"bad"}[r.s];
+    var at=r.at?' · '+T("vc_signed")+': '+esc(new Date(r.at).toLocaleDateString(LANG==="en"?"en-GB":"tr-TR")):"";
+    el.innerHTML='<span class="pill '+cls+'" title="'+esc(T("vc_"+r.s+"_t"))+'">'+esc(T("vc_"+r.s))+'</span>'
+      +(r.s==="ok"?' <button class="btn sm" style="padding:2px 8px;font-size:11px" onclick="dlVc()" title="'+esc(T("vc_ok_t"))+at+'">'+T("vc_dl")+'</button>':'')
+      +'<div class="hint" style="margin-top:4px">'+esc(T("vc_"+r.s+"_t"))+at+'</div>';};
+  if(vcState[id]&&vcState[id].s!=="pending")return put(vcState[id]);
+  verifyVc(id,p).then(put);
+}
+window.dlVc=function(){var r=vcState[curId];if(!r||!r.jwt)return;
+  var blob=new Blob([r.jwt],{type:"application/vc+jwt"}),a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download="dpp-"+curId+".vc.jwt";document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);};
+
 /* ---------- JSON-LD (public data only) ---------- */
 function jsonLd(p,v,url){
   var cat=p.category,props=[];
@@ -1293,7 +1403,8 @@ window.delP=function(id){
   var ref=fs.collection("passports").doc(id);
   try{var all=[].concat((curP&&curP.values&&curP.values.photos)||[],(curP&&curP.values&&curP.values.cert_docs)||[],((lastPub&&lastPub[2])||{}).tech_docs||[]);
     all.forEach(function(x){if(x.path)st.ref(x.path).delete().catch(function(){});});}catch(e){}
-  ref.collection("private").doc("authority").delete().catch(function(){}).then(function(){return ref.delete();})
+  ref.collection("private").doc("authority").delete().catch(function(){})
+    .then(function(){return fs.collection("credentials").doc(id).delete().catch(function(){});}).then(function(){return ref.delete();})
     .then(function(){myCount=null;location.hash="";}).catch(function(e){alert("Silinemedi: "+errTr(e));});
 };
 function fact(k,v){return '<div class="fact"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';}

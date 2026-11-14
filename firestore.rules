@@ -50,6 +50,18 @@ service cloud.firestore {
       }
     }
 
+    // imzali pasaport (W3C Verifiable Credential): yalnizca Commited'in Apps Script'i yazar
+    // (sunucu tarafi IAM erisimi bu kurallari atlar); herkes okuyup dogrulayabilir.
+    // Pasaport silinirken sahibi veya yonetici imzali kopyayi da silebilir.
+    match /credentials/{id} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create, update: if false;
+      allow delete: if isAdmin() || (request.auth != null
+        && exists(/databases/$(database)/documents/passports/$(id))
+        && get(/databases/$(database)/documents/passports/$(id)).data.ownerUid == request.auth.uid);
+    }
+
     // yeni pasaport bildirimi: "Trigger Email" eklentisi bu koleksiyonu okuyup e-posta gonderir.
     // Uyeler yalnizca yoneticiye giden, kendi adlarina bir kayit olusturabilir; okuma sadece yonetici.
     match /mail/{mid} {
