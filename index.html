@@ -74,7 +74,7 @@ main{padding-block:22px 64px}
 .pill.int{color:var(--internal);background:var(--internal-bg)}
 .empty{border:1px dashed var(--line);border-radius:var(--radius);padding:40px 22px;text-align:center;color:var(--muted);margin-top:18px;background:var(--surface)}
 .notice{border:1px solid var(--line);background:var(--surface-2);border-radius:var(--radius-sm);padding:12px 14px;font-size:13.5px;color:var(--muted);margin-top:16px}
-.chooser{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.chooser{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:18px}
 .choice{border:1.5px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:18px;cursor:pointer;text-align:left;font-family:inherit;color:var(--fg)}
 .choice:hover{border-color:var(--accent)}
 .choice.on{border-color:var(--accent);background:var(--public-bg)}
@@ -322,9 +322,37 @@ var ELECTRONICS=[
  {title:"Yaşam sonu",fields:[
    {c:"weee",l:"WEEE / geri dönüşüm bilgisi",t:"LONG",r:1,a:"PUBLIC"}]}
 ];
+var EYEWEAR=[
+ {title:"Malzeme",fields:[
+   {c:"material_comp",l:"Malzeme bileşimi",t:"REP",r:1,a:"PUBLIC",sub:[{c:"mat",l:"Malzeme"},{c:"pct",l:"%",t:"NUMBER"}],note:"Çerçeve, lens ve metal parçaların ağırlıkça yüzdesi (ör. geri dönüştürülmüş PA6 %60, polikarbonat %35, paslanmaz çelik %5). Yüzdeler toplamı 100 olmalı."},
+   {c:"recycled_content",l:"Geri dönüştürülmüş içerik",t:"NUMBER",u:"%",a:"PUBLIC"},
+   {c:"marine_origin",l:"Deniz / hayalet ağ kaynağı",t:"LONG",a:"PUBLIC",note:"Geri dönüştürülmüş deniz plastiği / hayalet ağ kaynağı ve izlenebilirlik hikâyesi"}]},
+ {title:"Optik ve güvenlik",fields:[
+   {c:"uv_category",l:"UV filtre kategorisi",t:"SELECT",a:"PUBLIC",opts:["uv0","uv1","uv2","uv3","uv4"],note:"EN ISO 12312-1'e göre güneş camı filtre kategorisi (0–4)"},
+   {c:"uv_protection",l:"UV koruma",t:"TEXT",a:"PUBLIC",note:"ör. UV400 / %100 UVA-UVB"},
+   {c:"ce_mark",l:"CE işareti (KKD 2016/425)",t:"BOOL",r:1,a:"PUBLIC"},
+   {c:"optic_standard",l:"İlgili standart",t:"TEXT",a:"PUBLIC",note:"ör. EN ISO 12312-1, EN ISO 12311"}]},
+ {title:"Tedarik zinciri",fields:[
+   {c:"collection_partner",l:"Toplama ortağı",t:"TEXT",a:"PUBLIC",note:"Hayalet ağ toplama (ör. Deniz Yaşamı Koruma Derneği)"},
+   {c:"recycling_partner",l:"Geri dönüşüm ortağı",t:"TEXT",a:"PUBLIC",note:"Granül üretimi (ör. ZetaPlast — PA6)"},
+   {c:"frame_manufacturer",l:"Çerçeve üreticisi",t:"TEXT",a:"AUTHORITY",note:"ör. Billur Optik"}]},
+ {title:"Döngüsellik (ESPR)",fields:[
+   {c:"recyclable_pct",l:"Geri dönüştürülebilir malzeme oranı",t:"NUMBER",u:"%",a:"PUBLIC",note:"Ürünün ağırlıkça geri dönüştürülebilir kısmı"},
+   {c:"reparability",l:"Onarılabilirlik",t:"SELECT",a:"PUBLIC",opts:["rep_easy","rep_med","rep_hard","rep_na"],note:"Lens/menteşe değişimi, yedek parça bulunabilirliği"},
+   {c:"takeback",l:"Toplama / geri alma kanalı",t:"LONG",a:"PUBLIC",note:"Ömrü sonunda gözlüğün nereye/nasıl teslim edilebileceği"}]},
+ {title:"Karbon ön hesaplama girdileri",fields:[
+   {c:"elec_kwh",l:"Ürün başına elektrik",t:"NUMBER",u:"kWh",a:"AUTHORITY",note:"Enjeksiyon, taşlama, montaj dahil ürün başına elektrik"},
+   {c:"gas_kwh",l:"Ürün başına doğalgaz",t:"NUMBER",u:"kWh",a:"AUTHORITY",note:"Faturadaki kWh ÷ aylık üretim adedi"},
+   {c:"waste_pct",l:"Üretim firesi",t:"NUMBER",u:"%",a:"AUTHORITY",note:"İşleme kaybı; bilinmiyorsa boş bırakın"}]},
+ {title:"Detaylı karbon hesabı (isteğe bağlı)",fields:TEXTILE[TEXTILE.length-1].fields.map(function(f){
+   if(f.c==="transport_legs")return Object.assign({},f,{sub:[{c:"leg",l:"Güzergâh (ör. granül → fabrika)"},f.sub[1],f.sub[2]],note:"Granülün fabrikaya ve ürünün müşteriye taşınması. Ağırlık olarak ürün + ambalaj kullanılır."});
+   if(f.c==="supplier_steps")return Object.assign({},f,{sub:[{c:"step",l:"Aşama (ör. granül üretimi)"},f.sub[1]]});
+   return f;})}
+];
 var CATS={
   TEXTILE:{label:"Tekstil",desc:"Hazır giyim, ev tekstili, aksesuar",sections:COMMON.concat(TEXTILE,TAIL)},
-  ELECTRONICS:{label:"Elektronik",desc:"Tüketici elektroniği, cihazlar",sections:COMMON.concat(ELECTRONICS,TAIL)}
+  ELECTRONICS:{label:"Elektronik",desc:"Tüketici elektroniği, cihazlar",sections:COMMON.concat(ELECTRONICS,TAIL)},
+  EYEWEAR:{label:"Güneş gözlüğü",desc:"Hayalet ağ / geri dönüştürülmüş gözlük, aksesuar",sections:COMMON.concat(EYEWEAR,TAIL)}
 };
 function fieldsOf(cat){var o=[];CATS[cat].sections.forEach(function(s){s.fields.forEach(function(f){o.push(f)})});return o;}
 function fieldDef(cat,code){return fieldsOf(cat).filter(function(f){return f.c===code})[0];}
@@ -375,26 +403,27 @@ var EN_F={product_name:"Product name",brand:"Brand",sku:"Model / SKU",photos:"Pr
  material_comp:"Material composition",crm:"Critical raw materials",rohs:"RoHS compliant",reach_scip:"REACH / SCIP note",
  energy_class:"Energy efficiency class",power_kwh_year:"Power consumption",repair_score:"Repairability score",
  spare_years:"Spare parts availability",sw_update_years:"Software update period",ce_mark:"CE marking",
- battery_passport:"Battery passport link",weee:"WEEE / recycling information"};
+ battery_passport:"Battery passport link",weee:"WEEE / recycling information",
+ marine_origin:"Marine / ghost-net source",uv_category:"UV filter category",uv_protection:"UV protection",optic_standard:"Relevant standard",collection_partner:"Collection partner",recycling_partner:"Recycling partner",frame_manufacturer:"Frame manufacturer"};
 var EN_U={"adet":"units","yıl":"years","kWh/yıl":"kWh/year","kgCO₂e / ürün":"kgCO₂e / product"};
 var EN_S={"Kimlik":"Identity","Menşe":"Origin","Çevresel performans":"Environmental performance",
  "Kullanım ve yaşam sonu":"Use and end of life","Sertifikalar":"Certificates","Malzeme":"Materials",
  "Kimyasal güvenlik":"Chemical safety","Tedarik zinciri":"Supply chain","Dayanıklılık":"Durability",
  "Madde uyumu":"Substance compliance","Enerji":"Energy","Dayanıklılık ve onarım":"Durability and repair",
- "Güvenlik ve batarya":"Safety and battery","Yaşam sonu":"End of life","Teknik dosya":"Technical file","Karbon ön hesaplama girdileri":"Carbon pre-calculation inputs","Detaylı karbon hesabı (isteğe bağlı)":"Detailed carbon calculation (optional)","Döngüsellik (ESPR)":"Circularity (ESPR)"};
-var EN_N={"Ürün başına değeri bilmiyorsanız: aylık toplamları girin, sistem ürün başına böler":"If you don't know per-product values: enter monthly totals and the system divides by units","Elektrik faturasındaki toplam; yukarıda ürün başına değer girildiyse o kullanılır":"Total on the electricity bill; a per-product value above takes precedence","Faturadaki kWh; m³ biliyorsanız yaklaşık 10,6 ile çarpın":"kWh on the bill; if you know m³, multiply by about 10.6","Hammaddenin fabrikaya ve ürünün müşteriye taşınması. Ağırlık olarak ürün + ambalaj kullanılır.":"Raw material to factory and product to customer. Product + packaging weight is used.","Tedarikçinizin size verdiği ürün başına değer. Bilmiyorsanız boş bırakın; o aşama hesapta eksik kalır.":"Per-product value provided by your supplier. Leave empty if unknown; that step stays missing from the calculation.","Değeri siz beyan edersiniz; Commited bu değeri doğrulamaz. Seçtiğiniz dayanağa göre pasaportta güven seviyesi gösterilir.":"You declare this value; Commited does not verify it. The passport shows a confidence level based on the basis you choose.","ör. ISO 14067, cradle-to-gate, 2025 üretim verisi":"e.g. ISO 14067, cradle-to-gate, 2025 production data","Yalnızca üçüncü taraf doğrulamada: kuruluş adı ve rapor no":"Third-party verification only: body name and report no.","Üçüncü taraf doğrulama seçildiyse zorunlu · PDF · herkese açık":"Required if third-party verification is selected · PDF · public","Kendi hesapladığınız veya doğrulattığınız değer. Boş bırakırsanız pasaportta Commited ön hesaplaması (tahmini) gösterilir.":"Your own calculated or verified value. If left empty, the passport shows the Commited pre-calculation (estimate).","ör. ISO 14067, cradle-to-gate, üçüncü taraf doğrulamalı":"e.g. ISO 14067, cradle-to-gate, third-party verified","Aylık elektrik tüketimi ÷ aylık üretim adedi (iplik, dokuma, boyama, konfeksiyon dahil)":"Monthly electricity use ÷ monthly units produced (incl. spinning, weaving, dyeing, making)","Faturadaki kWh ÷ aylık üretim adedi":"kWh on the bill ÷ monthly units produced","Kesim ve üretim kaybı; bilinmiyorsa boş bırakın":"Cutting and production loss; leave empty if unknown","En fazla 3 fotoğraf · JPG, PNG veya WebP · dosya başına 10 MB":"Up to 3 photos · JPG, PNG or WebP · 10 MB per file","Sertifikaların PDF kopyaları · herkese açık":"PDF copies of certificates · public","Test raporları, REACH/SVHC beyanları, uygunluk beyanı · yalnızca siz ve yetkililer görür":"Test reports, REACH/SVHC declarations, declaration of conformity · visible only to you and authorities","Commited karbon motoru ile hesaplanır":"Calculated with the Commited carbon engine","ör. boyama, dikim":"e.g. dyeing, sewing",
+ "Güvenlik ve batarya":"Safety and battery","Yaşam sonu":"End of life","Teknik dosya":"Technical file","Karbon ön hesaplama girdileri":"Carbon pre-calculation inputs","Detaylı karbon hesabı (isteğe bağlı)":"Detailed carbon calculation (optional)","Döngüsellik (ESPR)":"Circularity (ESPR)","Optik ve güvenlik":"Optics and safety"};
+var EN_N={"Çerçeve, lens ve metal parçaların ağırlıkça yüzdesi (ör. geri dönüştürülmüş PA6 %60, polikarbonat %35, paslanmaz çelik %5). Yüzdeler toplamı 100 olmalı.":"Share by weight of frame, lens and metal parts (e.g. recycled PA6 60%, polycarbonate 35%, stainless steel 5%). Shares must total 100.","Geri dönüştürülmüş deniz plastiği / hayalet ağ kaynağı ve izlenebilirlik hikâyesi":"Source of recycled marine plastic / ghost nets and traceability story","EN ISO 12312-1'e göre güneş camı filtre kategorisi (0–4)":"Sunglass filter category per EN ISO 12312-1 (0–4)","ör. UV400 / %100 UVA-UVB":"e.g. UV400 / 100% UVA-UVB","ör. EN ISO 12312-1, EN ISO 12311":"e.g. EN ISO 12312-1, EN ISO 12311","Hayalet ağ toplama (ör. Deniz Yaşamı Koruma Derneği)":"Ghost-net collection (e.g. Deniz Yaşamı Koruma Derneği)","Granül üretimi (ör. ZetaPlast — PA6)":"Granulate production (e.g. ZetaPlast — PA6)","ör. Billur Optik":"e.g. Billur Optik","Lens/menteşe değişimi, yedek parça bulunabilirliği":"Lens/hinge replacement, spare part availability","Ömrü sonunda gözlüğün nereye/nasıl teslim edilebileceği":"Where/how the eyewear can be returned at end of life","Enjeksiyon, taşlama, montaj dahil ürün başına elektrik":"Electricity per product incl. injection moulding, grinding, assembly","İşleme kaybı; bilinmiyorsa boş bırakın":"Processing loss; leave blank if unknown","Granülün fabrikaya ve ürünün müşteriye taşınması. Ağırlık olarak ürün + ambalaj kullanılır.":"Transport of granulate to the factory and of the product to the customer. Product + packaging weight is used.","Ürün başına değeri bilmiyorsanız: aylık toplamları girin, sistem ürün başına böler":"If you don't know per-product values: enter monthly totals and the system divides by units","Elektrik faturasındaki toplam; yukarıda ürün başına değer girildiyse o kullanılır":"Total on the electricity bill; a per-product value above takes precedence","Faturadaki kWh; m³ biliyorsanız yaklaşık 10,6 ile çarpın":"kWh on the bill; if you know m³, multiply by about 10.6","Hammaddenin fabrikaya ve ürünün müşteriye taşınması. Ağırlık olarak ürün + ambalaj kullanılır.":"Raw material to factory and product to customer. Product + packaging weight is used.","Tedarikçinizin size verdiği ürün başına değer. Bilmiyorsanız boş bırakın; o aşama hesapta eksik kalır.":"Per-product value provided by your supplier. Leave empty if unknown; that step stays missing from the calculation.","Değeri siz beyan edersiniz; Commited bu değeri doğrulamaz. Seçtiğiniz dayanağa göre pasaportta güven seviyesi gösterilir.":"You declare this value; Commited does not verify it. The passport shows a confidence level based on the basis you choose.","ör. ISO 14067, cradle-to-gate, 2025 üretim verisi":"e.g. ISO 14067, cradle-to-gate, 2025 production data","Yalnızca üçüncü taraf doğrulamada: kuruluş adı ve rapor no":"Third-party verification only: body name and report no.","Üçüncü taraf doğrulama seçildiyse zorunlu · PDF · herkese açık":"Required if third-party verification is selected · PDF · public","Kendi hesapladığınız veya doğrulattığınız değer. Boş bırakırsanız pasaportta Commited ön hesaplaması (tahmini) gösterilir.":"Your own calculated or verified value. If left empty, the passport shows the Commited pre-calculation (estimate).","ör. ISO 14067, cradle-to-gate, üçüncü taraf doğrulamalı":"e.g. ISO 14067, cradle-to-gate, third-party verified","Aylık elektrik tüketimi ÷ aylık üretim adedi (iplik, dokuma, boyama, konfeksiyon dahil)":"Monthly electricity use ÷ monthly units produced (incl. spinning, weaving, dyeing, making)","Faturadaki kWh ÷ aylık üretim adedi":"kWh on the bill ÷ monthly units produced","Kesim ve üretim kaybı; bilinmiyorsa boş bırakın":"Cutting and production loss; leave empty if unknown","En fazla 3 fotoğraf · JPG, PNG veya WebP · dosya başına 10 MB":"Up to 3 photos · JPG, PNG or WebP · 10 MB per file","Sertifikaların PDF kopyaları · herkese açık":"PDF copies of certificates · public","Test raporları, REACH/SVHC beyanları, uygunluk beyanı · yalnızca siz ve yetkililer görür":"Test reports, REACH/SVHC declarations, declaration of conformity · visible only to you and authorities","Commited karbon motoru ile hesaplanır":"Calculated with the Commited carbon engine","ör. boyama, dikim":"e.g. dyeing, sewing",
 "Ürünü AB pazarına arz eden işletmenin GS1 Küresel Konum Numarası (GLN, 13 hane) — ESPR 4 tanımlayıcıdan 2.'si":"GS1 Global Location Number (GLN, 13 digits) of the economic operator placing the product on the EU market — 2nd of the 4 ESPR identifiers","AB Merkezi DPP Sicili'ne kayıtta verilen tanımlayıcı — ESPR 4 tanımlayıcıdan 4.'sü (sicil 19 Tem 2026 sonrası)":"Identifier issued on registration in the EU Central DPP Registry — 4th of the 4 ESPR identifiers (registry from 19 Jul 2026)","Üretim tesisinin GS1 Küresel Konum Numarası (GLN, 13 hane) — ESPR 4 tanımlayıcıdan 3.'sü":"GS1 Global Location Number (GLN, 13 digits) of the manufacturing facility — 3rd of the 4 ESPR identifiers",
 "Ürünün ağırlıkça geri dönüştürülebilir kısmı":"Share of the product, by weight, that is recyclable","Tek malzeme ve kolay ayrılabilen aksesuarlar (fermuar, etiket) geri dönüşümü kolaylaştırır":"Mono-material and easily separable trims (zippers, labels) make recycling easier","Ürünün biçim ve işlevini koruduğu tahmini yıkama sayısı":"Estimated number of washes the product keeps its shape and function","Söküm, yedek aksesuar ve onarım kolaylığı":"Ease of disassembly, spare trims and repair","İkinci el / yeniden kullanıma uygun mu":"Whether it is suitable for second-hand / reuse","Ömrü sonunda ürünün nereye/nasıl teslim edilebileceği (mağaza toplama, tekstil kutusu, iade programı)":"Where/how the product can be returned at end of life (in-store collection, textile bank, take-back programme)","Sentetik lif içeren ürünlerde yıkamada mikroplastik salımına dair bilgi ve önlem":"Information and measures on microplastic release during washing for products containing synthetic fibres",
  "GS1 Türkiye'den alınan 8, 12, 13 veya 14 haneli numara — kontrol hanesi doğrulanır":"8, 12, 13 or 14-digit number from GS1 — check digit is validated",
  "Parti düzeyinde pasaport için (GS1 AI 10)":"For batch-level passports (GS1 AI 10)","Tekil ürün düzeyinde pasaport için (GS1 AI 21)":"For item-level passports (GS1 AI 21)"};
-var EN_SUB={"Güzergâh (ör. iplik → fabrika)":"Route (e.g. yarn → factory)","Tür: kara / deniz / hava / tren":"Mode: road / sea / air / rail","Aşama (ör. fason boyahane)":"Step (e.g. contract dyehouse)","kgCO₂e / ürün":"kgCO₂e / product","Tür (ör. GOTS)":"Type (e.g. GOTS)","Lif":"Fibre","Malzeme":"Material","Tedarikçi":"Supplier"};
+var EN_SUB={"Güzergâh (ör. granül → fabrika)":"Route (e.g. granulate → factory)","Aşama (ör. granül üretimi)":"Step (e.g. granulate production)","Güzergâh (ör. iplik → fabrika)":"Route (e.g. yarn → factory)","Tür: kara / deniz / hava / tren":"Mode: road / sea / air / rail","Aşama (ör. fason boyahane)":"Step (e.g. contract dyehouse)","kgCO₂e / ürün":"kgCO₂e / product","Tür (ör. GOTS)":"Type (e.g. GOTS)","Lif":"Fibre","Malzeme":"Material","Tedarikçi":"Supplier"};
 var UI={
- tr:{cat_TEXTILE:"Tekstil",cat_ELECTRONICS:"Elektronik",desc_TEXTILE:"Hazır giyim, ev tekstili, aksesuar",desc_ELECTRONICS:"Tüketici elektroniği, cihazlar",
+ tr:{cat_TEXTILE:"Tekstil",cat_ELECTRONICS:"Elektronik",cat_EYEWEAR:"Güneş gözlüğü",desc_EYEWEAR:"Hayalet ağ / geri dönüştürülmüş gözlük, aksesuar",desc_TEXTILE:"Hazır giyim, ev tekstili, aksesuar",desc_ELECTRONICS:"Tüketici elektroniği, cihazlar",
   sub_brand:"Dijital Ürün Pasaportu",dpp:"Dijital Ürün Pasaportu",
   a_PUBLIC:"Herkese açık",a_AUTHORITY:"Otorite",a_INTERNAL:"İç",yes:"Evet",no:"Hayır",add_row:"+ Satır ekle",del:"Sil",
   required:"Zorunlu alan",req_count:"zorunlu alan",bad_gtin:"Geçersiz GTIN (hane sayısı veya kontrol hanesi hatalı)",
   back_home:"Ana sayfa",back_mine:"Ürünlerime dön",unnamed_p:"(adsız ürün)",maker:"Üretici",sample:"Örnek veri",
-  f_carbon:"Karbon ayak izi",f_rec:"Geri dönüştürülmüş",f_origin:"Menşe",f_energy:"Enerji sınıfı",
+  f_carbon:"Karbon ayak izi",f_rec:"Geri dönüştürülmüş",f_origin:"Menşe",f_energy:"Enerji sınıfı",f_uv:"UV kategorisi",
   auth_show:"Otorite görünümü (gümrük/denetim)",auth_hide:"Otorite alanlarını gizle",copy:"Bağlantıyı kopyala",copied:"Kopyalandı ✓",
   qr_dl:"QR indir",edit:"Düzenle",
   auth_note:"Üretim tesisi, tedarikçiler ve kimyasal madde notları gibi otorite alanları yalnızca yetkili kişilere açıktır.",
@@ -411,6 +440,8 @@ var UI={
   est_scope2:"Kapsam: lif üretimi + üretim enerjisi ve yakıtları + girilen tedarikçi aşamaları, ambalaj ve taşıma ayakları. Kullanım ve yaşam sonu dahil değildir.",
   est_badmode:"Taşıma türü tanınmadı (kara / deniz / hava / tren yazın)",
   lv_pick:"Seçin…",lv_declared:"Firma beyanı (yöntem belgelenmemiş)",lv_calculated:"Firma hesabı – standart yöntemle (ISO 14067 / PEF / GHG Protocol), doğrulanmamış",lv_verified:"Üçüncü taraf doğrulamalı (akredite kuruluş, ISO 14067 / ISO 14064-3)",
+  lv_uv0:"Kategori 0 — çok açık (UV koruma düşük)",lv_uv1:"Kategori 1 — açık",lv_uv2:"Kategori 2 — orta",lv_uv3:"Kategori 3 — koyu (genel güneş)",lv_uv4:"Kategori 4 — çok koyu (araç kullanımına uygun değil)",
+  est_mat_m:"Malzeme üretimi",est_need_m:"Malzeme bileşimi girilmeli",est_sum_m:"Malzeme oranları toplamı %100 olmalı",est_nofactor_m:"Bu malzeme için kaynaklı faktör yok",est_noenergy_m:"Üretim enerjisi girilmedi; toplam yalnızca malzeme aşamasını içerir.",est_scope_m:"Kapsam: cradle-to-gate (malzeme üretimi + üretim enerjisi). Nakliye, ambalaj, kullanım ve yaşam sonu dahil değildir.",est_scope2_m:"Kapsam: malzeme üretimi + üretim enerjisi ve yakıtları + girilen tedarikçi aşamaları, ambalaj ve taşıma ayakları. Kullanım ve yaşam sonu dahil değildir.",est_recy_m:"Geri dönüştürülmüş poliamid / hayalet ağ için ayrı (düşük) faktör kullanılır; malzeme adında \"geri dönüştürülmüş\" veya \"hayalet ağ\" geçmelidir.",
   lv_recyc_easy:"Kolay (tek malzeme / ayrıştırılabilir)",lv_recyc_med:"Orta",lv_recyc_hard:"Zor (karışık lif / ayrılamaz aksesuar)",lv_rep_easy:"Kolay onarılır",lv_rep_med:"Orta",lv_rep_hard:"Zor",lv_rep_na:"Onarılamaz / geçersiz",
   lvs_declared:"Firma beyanı",lvs_calculated:"Firma hesabı, doğrulanmamış",lvs_verified:"Üçüncü taraf doğrulamalı",lvs_estimate:"Commited ön hesaplaması",
   lv_conf:"Güven seviyesi",lv_disc:"Bu değer firma tarafından beyan edilmiştir. Commited tarafından doğrulanmamıştır.",lv_vdisc:"Doğrulama belgesi firma tarafından yüklenmiştir; Commited belgenin içeriğini onaylamaz.",
@@ -421,12 +452,12 @@ var UI={
   label_hint:"Gerçek boyutta yazdırılır (tarayıcıda ölçek %100). QR'ın ürün, ambalaj veya eşlik eden belgede bulunması gerekir.",
   scan:"Ürün pasaportu için okutun",jsonld:"JSON-LD",jsonld_dl:"Dosya olarak indir",nf_t:"Pasaport bulunamadı",nf:"Bu bağlantıya ait pasaport bulunamadı.",
   vc_ok:"✓ Commited imzası doğrulandı",vc_pending:"İmza hazırlanıyor",vc_bad:"⚠ İmza doğrulanamadı",vc_ok_t:"Bu pasaportun verileri Commited tarafından dijital olarak imzalandı ve imzadan sonra değişmedi (W3C Verifiable Credentials 2.0).",vc_pending_t:"Pasaport yeni kaydedildi veya güncellendi; Commited imzası birkaç dakika içinde eklenecek.",vc_bad_t:"Bu sayfadaki veriler Commited'in imzaladığı sürümle uyuşmuyor. Ürünü satın almadan önce üreticiye danışın.",vc_dl:"VC indir",vc_signed:"İmza tarihi"},
- en:{cat_TEXTILE:"Textile",cat_ELECTRONICS:"Electronics",desc_TEXTILE:"Apparel, home textiles, accessories",desc_ELECTRONICS:"Consumer electronics, appliances",
+ en:{cat_TEXTILE:"Textile",cat_ELECTRONICS:"Electronics",cat_EYEWEAR:"Sunglasses",desc_EYEWEAR:"Ghost-net / recycled eyewear, accessories",desc_TEXTILE:"Apparel, home textiles, accessories",desc_ELECTRONICS:"Consumer electronics, appliances",
   sub_brand:"Digital Product Passport",dpp:"Digital Product Passport",
   a_PUBLIC:"Public",a_AUTHORITY:"Authority",a_INTERNAL:"Internal",yes:"Yes",no:"No",add_row:"+ Add row",del:"Remove",
   required:"Required field",req_count:"required fields",bad_gtin:"Invalid GTIN (wrong length or check digit)",
   back_home:"Home",back_mine:"Back to my products",unnamed_p:"(untitled product)",maker:"Manufacturer",sample:"Sample data",
-  f_carbon:"Carbon footprint",f_rec:"Recycled content",f_origin:"Origin",f_energy:"Energy class",
+  f_carbon:"Carbon footprint",f_rec:"Recycled content",f_origin:"Origin",f_energy:"Energy class",f_uv:"UV category",
   auth_show:"Authority view (customs/surveillance)",auth_hide:"Hide authority fields",copy:"Copy link",copied:"Copied ✓",
   qr_dl:"Download QR",edit:"Edit",
   auth_note:"Authority fields such as the manufacturing facility, suppliers and chemical substance notes are only available to authorised parties.",
@@ -443,6 +474,8 @@ var UI={
   est_scope2:"Scope: fibre production + production energy and fuels + entered supplier steps, packaging and transport legs. Use and end of life are excluded.",
   est_badmode:"Transport mode not recognised (enter road / sea / air / rail)",
   lv_pick:"Select…",lv_declared:"Company declaration (method not documented)",lv_calculated:"Company calculation – standard method (ISO 14067 / PEF / GHG Protocol), not verified",lv_verified:"Third-party verified (accredited body, ISO 14067 / ISO 14064-3)",
+  lv_uv0:"Category 0 — very light (low UV)",lv_uv1:"Category 1 — light",lv_uv2:"Category 2 — medium",lv_uv3:"Category 3 — dark (general sun)",lv_uv4:"Category 4 — very dark (not for driving)",
+  est_mat_m:"Material production",est_need_m:"Material composition is required",est_sum_m:"Material shares must add up to 100%",est_nofactor_m:"No sourced factor for this material",est_noenergy_m:"Production energy not entered; the total covers the material stage only.",est_scope_m:"Scope: cradle-to-gate (material production + production energy). Transport, packaging, use and end of life are excluded.",est_scope2_m:"Scope: material production + production energy and fuels + entered supplier steps, packaging and transport legs. Use and end of life are excluded.",est_recy_m:"Recycled polyamide / ghost-net material uses its own (lower) factor; the material name must contain \"recycled\" or \"ghost net\".",
   lv_recyc_easy:"Easy (mono-material / separable)",lv_recyc_med:"Medium",lv_recyc_hard:"Hard (mixed fibre / non-separable trims)",lv_rep_easy:"Easily repairable",lv_rep_med:"Medium",lv_rep_hard:"Hard",lv_rep_na:"Not repairable / N/A",
   lvs_declared:"Company declaration",lvs_calculated:"Company calculation, not verified",lvs_verified:"Third-party verified",lvs_estimate:"Commited pre-calculation",
   lv_conf:"Confidence level",lv_disc:"This value is declared by the company. It has not been verified by Commited.",lv_vdisc:"The verification statement was uploaded by the company; Commited does not endorse its content.",
@@ -701,6 +734,7 @@ function paintWizard(){
     h+='<div class="chooser">'
      +'<button class="choice'+(draft.category==="TEXTILE"?" on":"")+'" onclick="pickCat(\'TEXTILE\')"><h3>'+T("cat_TEXTILE")+'</h3><p>'+T("desc_TEXTILE")+'</p></button>'
      +'<button class="choice'+(draft.category==="ELECTRONICS"?" on":"")+'" onclick="pickCat(\'ELECTRONICS\')"><h3>'+T("cat_ELECTRONICS")+'</h3><p>'+T("desc_ELECTRONICS")+'</p></button>'
+     +'<button class="choice'+(draft.category==="EYEWEAR"?" on":"")+'" onclick="pickCat(\'EYEWEAR\')"><h3>'+T("cat_EYEWEAR")+'</h3><p>'+T("desc_EYEWEAR")+'</p></button>'
      +'</div>';
   }
   if(draft.category)h+='<div id="form"></div>';
@@ -854,19 +888,36 @@ var EST_SRC=[
   "UK Government (DESNZ/Defra) Greenhouse gas reporting: conversion factors 2025 — material use, primary production: board 1,200 kg CO2e/t; LDPE/LLDPE incl. forming 2,965 kg CO2e/t; sea freight container ship (average) 0.01612 kg CO2e/tonne-km (as reproduced in NZ MfE Measuring Emissions Guide 2025, Table 8.20)",
   "Smart Freight Centre, GLEC Framework v3.2 (2023) default intensities, well-to-wheel — road articulated HDV 0.107, air freighter long-haul 0.608, rail diesel EU 0.0307 kg CO2e/tonne-km",
   "Ek lif faktörleri (göstergesel): naylon/poliamid 7.0, akrilik 5.0, elastan 9.0, yün 20.0, keten/kenevir 2.3 kg CO2e/kg — yaygın LCA literatürü / Higg MSI mertebesi. Doğrulanmış değer için üçüncü taraf LCA kullanın."];
+var MATERIAL_EF=[ // kg CO2e / kg; eyewear polymers & metals (indicative, see EYEWEAR_SRC). Recycled entry must precede virgin.
+  {k:"rpa",re:/geri (d[öo]n[üu]|kazan)[^,;]*(poliamid|naylon|\bpa(6|66)?\b)|hayalet a[ğg]|ghost.?net|recycled[^,;]*(polyamide|nylon|\bpa(6|66)?\b)|\br-?pa(6|66)?\b|econyl/i,ef:2.5},
+  {k:"polyamide",re:/poliamid|polyamide|naylon|nylon|pa6|\bpa\b|tr-?90|grilamid/i,ef:7.0},
+  {k:"polycarbonate",re:/polikarbonat|polycarbonate|\bpc\b/i,ef:7.6},
+  {k:"acetate",re:/asetat|acetate|sel[üu]loz/i,ef:5.0},
+  {k:"cr39",re:/cr-?39|allyl/i,ef:6.0},
+  {k:"aluminum",re:/al[üu]minyum|alumin/i,ef:9.0},
+  {k:"steel",re:/paslanmaz|stainless|[çc]elik|steel|metal/i,ef:6.1},
+  {k:"glass",re:/\bcam\b|glass|mineral/i,ef:1.0},
+  {k:"plastic",re:/plastik|plastic|polimer|polymer/i,ef:3.0}];
+var EYEWEAR_SRC="Gözlük malzeme faktörleri (göstergesel, kg CO2e/kg): geri dönüştürülmüş PA6 / hayalet ağ 2.5, birincil poliamid 7.0, polikarbonat 7.6, selüloz asetat 5.0, CR-39 6.0, paslanmaz çelik 6.1, alüminyum 9.0, cam 1.0, plastik 3.0 — yaygın LCA literatürü / Ecoinvent · Higg MSI mertebesi. Doğrulanmış değer için üçüncü taraf LCA kullanın.";
+var EST_CFG={
+  TEXTILE:{ef:FIBER_EF,comp:"fiber_composition",nk:"fiber",kind:"fiber",ver:EST_VER,src:EST_SRC},
+  EYEWEAR:{ef:MATERIAL_EF,comp:"material_comp",nk:"mat",kind:"mat",ver:"CM-EW-1.0 (2026-11)",src:EST_SRC.slice(1,5).concat([EYEWEAR_SRC])}
+};
+function estKey(r,k){return r&&r.kind==="mat"&&UI.tr[k+"_m"]?k+"_m":k;}
 function num(x){var n=parseFloat(String(x==null?"":x).replace(",","."));return isFinite(n)?n:null;}
 function estimateCarbon(cat,v){
-  if(cat!=="TEXTILE")return null;
-  var r={ver:EST_VER,ok:false,issues:[],missingFibres:[],mat:null,elec:null,gas:null,total:null,partial:false};
-  var w=num(v.weight_g),rows=(v.fiber_composition||[]).filter(function(x){return x&&(x.fiber||x.pct)});
+  var cfg=EST_CFG[cat];if(!cfg)return null;
+  var NK=cfg.nk;
+  var r={ver:cfg.ver,srcList:cfg.src,kind:cfg.kind,ok:false,issues:[],missingFibres:[],mat:null,elec:null,gas:null,total:null,partial:false};
+  var w=num(v.weight_g),rows=(v[cfg.comp]||[]).filter(function(x){return x&&(x[NK]||x.pct)});
   if(!w||w<=0)r.issues.push("est_need_w");
-  if(!rows.length)r.issues.push("est_need_f");
+  if(!rows.length)r.issues.push(cfg.kind==="mat"?"est_need_m":"est_need_f");
   var sum=rows.reduce(function(a,x){return a+(num(x.pct)||0)},0);
   if(rows.length&&Math.abs(sum-100)>1)r.issues.push("est_sum");
   var waste=num(v.waste_pct);if(waste==null||waste<0||waste>=90)waste=0;
   var massKg=w?(w/1000)/(1-waste/100):0,mat=0;
-  rows.forEach(function(x){var m=FIBER_EF.filter(function(f){return f.re.test(x.fiber||"")})[0];
-    if(!m){r.missingFibres.push(x.fiber||"?");return;}
+  rows.forEach(function(x){var m=cfg.ef.filter(function(f){return f.re.test(x[NK]||"")})[0];
+    if(!m){r.missingFibres.push(x[NK]||"?");return;}
     mat+=(num(x.pct)||0)/100*massKg*m.ef;});
   if(r.missingFibres.length)r.issues.push("est_nofactor");
   if(r.issues.length)return r;
@@ -900,21 +951,21 @@ function estHtml(r,showSources){
   var h='<h3>'+T("est_t")+' <span class="pill auth">'+T("est_tag")+(r.partial?' · '+T("est_partial"):'')+'</span></h3>';
   if(!r.ok){
     h+='<div class="hint">'+T("est_none")+'</div><ul class="hint" style="margin:4px 0 0 18px;padding:0">'
-      +r.issues.map(function(k){return '<li>'+T(k)+(k==="est_nofactor"?': '+esc(r.missingFibres.join(", ")):'')+'</li>'}).join("")+'</ul>';
+      +r.issues.map(function(k){return '<li>'+T(estKey(r,k))+(k==="est_nofactor"?': '+esc(r.missingFibres.join(", ")):'')+'</li>'}).join("")+'</ul>';
     return h;
   }
-  h+='<div class="row"><span class="k">'+T("est_mat")+'</span><span class="v mono">'+fmtKg(r.mat)+' kgCO₂e</span></div>';
+  h+='<div class="row"><span class="k">'+T(estKey(r,"est_mat"))+'</span><span class="v mono">'+fmtKg(r.mat)+' kgCO₂e</span></div>';
   if(r.elec!=null)h+='<div class="row"><span class="k">'+T("est_elec")+'</span><span class="v mono">'+fmtKg(r.elec)+' kgCO₂e</span></div>';
   if(r.gas!=null)h+='<div class="row"><span class="k">'+T("est_gas")+'</span><span class="v mono">'+fmtKg(r.gas)+' kgCO₂e</span></div>';
   [["fuel","est_fuel"],["supp","est_supp"],["pack","est_pack"],["trans","est_trans"]].forEach(function(p){if(r[p[0]]!=null)h+='<div class="row"><span class="k">'+T(p[1])+'</span><span class="v mono">'+fmtKg(r[p[0]])+' kgCO₂e</span></div>';});
   h+='<div class="row"><span class="k"><b>'+T("est_total")+'</b></span><span class="v mono"><b>'+fmtKg(r.total)+' kgCO₂e</b></span></div>';
-  if(r.partial)h+='<div class="hint" style="margin-top:6px">'+T("est_noenergy")+'</div>';
+  if(r.partial)h+='<div class="hint" style="margin-top:6px">'+T(estKey(r,"est_noenergy"))+'</div>';
   if(r.badModes&&r.badModes.length)h+='<div class="hint" style="margin-top:6px">'+T("est_badmode")+': '+esc(r.badModes.join(", "))+'</div>';
   var ext=(r.pack!=null||r.trans!=null||r.supp!=null||r.fuel!=null);
-  h+='<div class="hint" style="margin-top:8px">'+T(ext?"est_scope2":"est_scope")+' '+T("est_recy")+'</div>'
+  h+='<div class="hint" style="margin-top:8px">'+T(estKey(r,ext?"est_scope2":"est_scope"))+' '+T(estKey(r,"est_recy"))+'</div>'
     +'<div class="hint" style="margin-top:4px"><b>'+T("est_disc")+'</b></div>';
   if(showSources)h+='<details style="margin-top:8px"><summary class="hint" style="cursor:pointer">'+T("est_src")+' · '+esc(r.ver||EST_VER)+'</summary><ol class="hint" style="margin:6px 0 0 18px;padding:0">'
-    +EST_SRC.map(function(x){return '<li>'+esc(x)+'</li>'}).join("")+'</ol></details>';
+    +(r.srcList||EST_SRC).map(function(x){return '<li>'+esc(x)+'</li>'}).join("")+'</ol></details>';
   return h;
 }
 function paintEst(){var el=document.getElementById("estBox");if(!el||!draft)return;
@@ -923,17 +974,19 @@ function paintEst(){var el=document.getElementById("estBox");if(!el||!draft)retu
 /* ---------- "Bilmiyorum, hesapla" pop-up (reuses estimateCarbon; fibre-% weighted) ---------- */
 var CALC=null;
 window.openCarbCalc=function(){
-  if(!draft||draft.category!=="TEXTILE"){CALC={na:true};paintCalc();return;}
-  var v=draft.values;
-  var rows=(v.fiber_composition||[]).filter(function(x){return x&&(x.fiber||x.pct)}).map(function(x){return {fiber:x.fiber||"",pct:x.pct||""}});
+  var cfg=draft&&EST_CFG[draft.category];
+  if(!cfg){CALC={na:true};paintCalc();return;}
+  var v=draft.values,nk=cfg.nk;
+  var rows=(v[cfg.comp]||[]).filter(function(x){return x&&(x[nk]||x.pct)}).map(function(x){return {fiber:x[nk]||"",pct:x.pct||""}});
   if(!rows.length)rows=[{fiber:"",pct:""}];
-  CALC={rows:rows,weight_g:v.weight_g||"",elec_kwh:v.elec_kwh||"",tr_mode:"",tr_km:""};
+  CALC={cat:draft.category,rows:rows,weight_g:v.weight_g||"",elec_kwh:v.elec_kwh||"",tr_mode:"",tr_km:""};
   paintCalc();
 };
 function calcTmp(){
-  var tv={fiber_composition:CALC.rows,weight_g:CALC.weight_g,elec_kwh:CALC.elec_kwh};
+  var cfg=EST_CFG[CALC.cat],tv={weight_g:CALC.weight_g,elec_kwh:CALC.elec_kwh};
+  tv[cfg.comp]=CALC.rows.map(function(x){var o={pct:x.pct};o[cfg.nk]=x.fiber;return o;});
   if(CALC.tr_km&&CALC.tr_mode)tv.transport_legs=[{km:CALC.tr_km,mode:CALC.tr_mode}];
-  return estimateCarbon("TEXTILE",tv);
+  return estimateCarbon(CALC.cat,tv);
 }
 function paintCalc(){
   var root=document.getElementById("calcRoot");if(!root||!CALC)return;
@@ -941,16 +994,16 @@ function paintCalc(){
   if(CALC.na){
     root.innerHTML='<div class="cm-ov" onclick="if(event.target===this)calcClose()"><div class="cm-card">'
       +'<div class="cm-h"><b>'+(en?"Carbon calculator":"Karbon hesaplayıcı")+'</b><button class="cm-x" onclick="calcClose()" aria-label="x">×</button></div>'
-      +'<p class="hint">'+(en?"The quick calculator currently supports textile products only.":"Hızlı hesaplayıcı şimdilik yalnızca tekstil ürünlerini destekler.")+'</p>'
+      +'<p class="hint">'+(en?"The quick calculator currently supports textile and eyewear products.":"Hızlı hesaplayıcı şimdilik tekstil ve gözlük ürünlerini destekler.")+'</p>'
       +'<div class="cm-foot"><button class="btn" onclick="calcClose()">'+(en?"Close":"Kapat")+'</button></div></div></div>';return;
   }
-  var r=calcTmp();
+  var r=calcTmp(),mt=EST_CFG[CALC.cat].kind==="mat";
   var h='<div class="cm-ov" onclick="if(event.target===this)calcClose()"><div class="cm-card">';
   h+='<div class="cm-h"><b>'+(en?"Carbon footprint calculator":"Karbon ayak izi hesaplayıcı")+'</b><button class="cm-x" onclick="calcClose()" aria-label="x">×</button></div>';
-  h+='<p class="hint" style="margin:0">'+(en?"Enter the fibre mix and weight. Each fibre is counted by its share of the weight (percentages must total 100).":"Lif karışımını ve ağırlığı girin. Her lif, ağırlıktaki payı oranında hesaba katılır (yüzdeler toplamı 100 olmalı).")+'</p>';
-  h+='<div class="cm-sec"><div class="cm-st">'+(en?"Fibre composition (name + %)":"Lif kompozisyonu (ad + %)")+'</div>';
-  CALC.rows.forEach(function(x,i){h+='<div class="rep-row"><input type="text" placeholder="'+(en?"Fibre (e.g. cotton)":"Lif (ör. pamuk)")+'" value="'+esc(x.fiber)+'" oninput="calcRow('+i+',\'fiber\',this.value)"><input type="number" placeholder="%" style="max-width:80px" value="'+esc(x.pct)+'" oninput="calcRow('+i+',\'pct\',this.value)"><button type="button" class="rm" onclick="calcDelFiber('+i+')" aria-label="x">×</button></div>';});
-  h+='<button type="button" class="add-row" onclick="calcAddFiber()">'+(en?"+ Add fibre":"+ Lif ekle")+'</button></div>';
+  h+='<p class="hint" style="margin:0">'+(mt?(en?"Enter the materials and weight. Each material is counted by its share of the weight (percentages must total 100). Write \"recycled\" or \"ghost net\" in the name for recycled material.":"Malzemeleri ve ağırlığı girin. Her malzeme, ağırlıktaki payı oranında hesaba katılır (yüzdeler toplamı 100 olmalı). Geri dönüştürülmüş malzemede adın içine \"geri dönüştürülmüş\" veya \"hayalet ağ\" yazın."):(en?"Enter the fibre mix and weight. Each fibre is counted by its share of the weight (percentages must total 100).":"Lif karışımını ve ağırlığı girin. Her lif, ağırlıktaki payı oranında hesaba katılır (yüzdeler toplamı 100 olmalı)."))+'</p>';
+  h+='<div class="cm-sec"><div class="cm-st">'+(mt?(en?"Material composition (name + %)":"Malzeme bileşimi (ad + %)"):(en?"Fibre composition (name + %)":"Lif kompozisyonu (ad + %)"))+'</div>';
+  CALC.rows.forEach(function(x,i){h+='<div class="rep-row"><input type="text" placeholder="'+(mt?(en?"Material (e.g. recycled PA6)":"Malzeme (ör. geri dönüştürülmüş PA6)"):(en?"Fibre (e.g. cotton)":"Lif (ör. pamuk)"))+'" value="'+esc(x.fiber)+'" oninput="calcRow('+i+',\'fiber\',this.value)"><input type="number" placeholder="%" style="max-width:80px" value="'+esc(x.pct)+'" oninput="calcRow('+i+',\'pct\',this.value)"><button type="button" class="rm" onclick="calcDelFiber('+i+')" aria-label="x">×</button></div>';});
+  h+='<button type="button" class="add-row" onclick="calcAddFiber()">'+(mt?(en?"+ Add material":"+ Malzeme ekle"):(en?"+ Add fibre":"+ Lif ekle"))+'</button></div>';
   h+='<div class="cm-sec"><div class="cm-st">'+(en?"Product weight":"Ürün ağırlığı")+'</div><div class="rep-row"><input type="number" placeholder="g" value="'+esc(CALC.weight_g)+'" oninput="calcField(\'weight_g\',this.value)"><span class="hint" style="align-self:center">'+(en?"grams per product":"ürün başına gram")+'</span></div></div>';
   h+='<div class="cm-sec"><div class="cm-st">'+(en?"Electricity per product (optional)":"Ürün başına elektrik (opsiyonel)")+'</div><div class="rep-row"><input type="number" placeholder="kWh" value="'+esc(CALC.elec_kwh)+'" oninput="calcField(\'elec_kwh\',this.value)"><span class="hint" style="align-self:center">× '+EF_ELEC+' kgCO₂e/kWh</span></div></div>';
   h+='<div class="cm-sec"><div class="cm-st">'+(en?"Transport (optional)":"Nakliye (opsiyonel)")+'</div><div class="rep-row"><input type="text" placeholder="'+(en?"mode: road / sea / air":"tür: kara / deniz / hava")+'" value="'+esc(CALC.tr_mode)+'" oninput="calcField(\'tr_mode\',this.value)"><input type="number" placeholder="km" style="max-width:100px" value="'+esc(CALC.tr_km)+'" oninput="calcField(\'tr_km\',this.value)"></div></div>';
@@ -969,7 +1022,8 @@ window.calcApply=function(){
   draft.values.carbon=String(r.total);
   draft.values.carbon_level="calculated";
   if(!draft.values.carbon_method)draft.values.carbon_method=(LANG==="en"?"Commited pre-calculation ":"Commited ön hesaplama ")+(r.ver||EST_VER);
-  draft.values.fiber_composition=CALC.rows.filter(function(x){return x.fiber||x.pct});
+  var cfg=EST_CFG[CALC.cat];
+  draft.values[cfg.comp]=CALC.rows.filter(function(x){return x.fiber||x.pct}).map(function(x){var o={pct:x.pct};o[cfg.nk]=x.fiber;return o;});
   if(CALC.weight_g!=="")draft.values.weight_g=CALC.weight_g;
   if(CALC.elec_kwh!=="")draft.values.elec_kwh=CALC.elec_kwh;
   saveDraft();calcClose();paintForm();
@@ -1055,13 +1109,13 @@ function renderAdmin(){
     ps.sort(function(a,b){return ts(b.p.createdAt)-ts(a.p.createdAt)});us.sort(function(a,b){return ts(b.u.createdAt)-ts(a.u.createdAt)});
     var byOwner={};ps.forEach(function(x){byOwner[x.p.ownerUid]=(byOwner[x.p.ownerUid]||0)+1;});
     var week=Date.now()-7*864e5,newP=ps.filter(function(x){return ts(x.p.createdAt)>=week}).length,newU=us.filter(function(x){return ts(x.u.createdAt)>=week}).length;
-    var tex=ps.filter(function(x){return x.p.category==="TEXTILE"}).length,gt=ps.filter(function(x){return x.p.values&&x.p.values.gtin}).length;
+    var tex=ps.filter(function(x){return x.p.category==="TEXTILE"}).length,eye=ps.filter(function(x){return x.p.category==="EYEWEAR"}).length,gt=ps.filter(function(x){return x.p.values&&x.p.values.gtin}).length;
     var userName={};us.forEach(function(x){userName[x.id]=x.u.company||x.u.username||x.u.email;});
     function paint(){
       var q=((document.getElementById("aq")||{}).value||"").toLocaleLowerCase("tr");
       var h=head("Admin paneli","Tüm üreticiler ve pasaportlar · yalnızca Commited yöneticileri")
         +'<div class="facts">'+fact("Üretici",us.length)+fact("Pasaport",ps.length)+fact("Son 7 gün · pasaport",newP)+fact("Son 7 gün · üretici",newU)
-        +fact("Tekstil / Elektronik",tex+" / "+(ps.length-tex))+fact("GTIN'li",gt)+'</div>'
+        +fact("Tekstil / Elektronik / Gözlük",tex+" / "+(ps.length-tex-eye)+" / "+eye)+fact("GTIN'li",gt)+'</div>'
         +'<div class="tabs"><button class="'+(adminTab==="passports"?"on":"")+'" onclick="setAdminTab(\'passports\')">Pasaportlar</button>'
         +'<button class="'+(adminTab==="users"?"on":"")+'" onclick="setAdminTab(\'users\')">Üreticiler</button>'
         +'<button class="'+(adminTab==="keys"?"on":"")+'" onclick="setAdminTab(\'keys\')">İmza anahtarı</button>'
@@ -1204,6 +1258,7 @@ function paintPublic(p,id,priv,owner){
   if(v.recycled_content)h+=fact(T("f_rec"),"%"+esc(v.recycled_content));
   if(v.country_origin)h+=fact(T("f_origin"),esc(v.country_origin));
   if(cat==="ELECTRONICS"&&v.energy_class)h+=fact(T("f_energy"),esc(v.energy_class));
+  if(cat==="EYEWEAR"&&v.uv_category)h+=fact(T("f_uv"),esc(String(v.uv_category).replace("uv","")));
   h+='</div>';
   var dl=digitalLink(v);
   h+='<div class="pp-sec"><h3>'+T("ids")+'</h3>'
